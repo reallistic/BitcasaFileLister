@@ -19,7 +19,7 @@ class BitcasaDownload:
             nm=item.name
             pt=item.path
             sz=float(item.size/1024/1024)
-            print "Thread [%s]: %s size %smb" % (tthdnum,item.name, sz)
+            print "Thread [%s]: %s size %smb\n" % (tthdnum,item.name, sz)
             try:
                 if not os.path.isdir(fulltmp):
                     os.makedirs(fulltmp)
@@ -44,6 +44,7 @@ class BitcasaDownload:
                         break
                 myFile.close()
                 if not self.prt.end:
+                    print "Thread [%s]: %s copying from temp to dest" % (tthdnum,item.name)
                     shutil.copy2(tmppath, destpath)
                     try:
                         os.remove(tmppath)
@@ -144,7 +145,7 @@ class BitcasaDownload:
         self.baseFolder=""
         #Access token
         self.at=""
-        self.maxthreads=5
+        self.maxthreads=2
         self.numthreads=0
         self.end=False
         self.cnt=0
