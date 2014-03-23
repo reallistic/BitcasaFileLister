@@ -22,9 +22,14 @@ catch (Exception $ex) {
 	var_dump($ex);
 	die($ex->getMessage());
 }
+if(isset($_GET['depth'])){
+	$dpth = $_GET['depth'];
+}
+else{
+	$dpth = 1;
+}
 
-
-header('Location: example.php?access_token=' . $client->getAccessToken() ,true, 302);
+header('Location: example.php?depth='.$dpth.'&access_token=' . $client->getAccessToken() ,true, 302);
 exit;
 
 ?>

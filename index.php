@@ -37,7 +37,11 @@
 		include_once("bitcasa-sdk-php/config.php");
 		?>
 		<h1>Bitcasa PHP SDK Login</h1>
-		<a href="<?php echo BitcasaClient::authorize(OAUTH_CLIENTID, ($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . ($_SERVER["REQUEST_URI"]) . "bitcasa-sdk-php/auth.php"); ?>" > Login</a>
+		<input type="hidden" value="<?php echo BitcasaClient::authorize(OAUTH_CLIENTID, ($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . ($_SERVER["REQUEST_URI"]) . "bitcasa-sdk-php/auth.php"); ?>" id="authurl">
+		<input type="number" min="1" max="5" name="maxdepth" id="maxdepth" value="1" /> Depth of file traverse
+		<input type="button" value="Set" onclick="$('#bcloginlink').attr('href',$('#authurl').val()+'?depth='+$('#maxdepth').val())">
+		<br />
+		<a id="bcloginlink" href="<?php echo BitcasaClient::authorize(OAUTH_CLIENTID, ($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . ($_SERVER["REQUEST_URI"]) . "bitcasa-sdk-php/auth.php"); ?>?depth=1" > Login</a>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 		<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 	</body>
