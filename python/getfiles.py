@@ -19,7 +19,7 @@ class BitcasaDownload:
             nm=item.name
             pt=item.path
             sz=float(item.size/1024/1024)
-            print "Thread [%s]: %s size %smb\n" % (tthdnum,item.name, sz)
+            logger("Thread [%s]: %s size %smb\n" % (tthdnum,item.name, sz))
             try:
                 if not os.path.isdir(fulltmp):
                     os.makedirs(fulltmp)
@@ -40,11 +40,11 @@ class BitcasaDownload:
                     if not self.prt.end:
                         myFile.write(byts)
                     else:
-                        print "Thread [%s]: Got exit signal. Quiting" % tthdnum
+                        logger("Thread [%s]: Got exit signal. Quiting\n" % tthdnum)
                         break
                 myFile.close()
                 if not self.prt.end:
-                    print "Thread [%s]: %s copying from temp to dest" % (tthdnum,item.name)
+                    logger("Thread [%s]: %s copying from temp to dest\n" % (tthdnum,item.name))
                     shutil.copy2(tmppath, destpath)
                     try:
                         os.remove(tmppath)
@@ -54,14 +54,14 @@ class BitcasaDownload:
                     myFile.write("%s\r\n" % destpath)
                     myFile.close()
 
-                    print "Thread [%s]: Finished download %s%s\n\n" % (tthdnum,fulldest,item.name)
+                    logger("Thread [%s]: Finished download %s%s\n\n" % (tthdnum,fulldest,item.name))
             except Exception, e:
                 try:
                     myFile = file("%serrorfiles.txt" % self.prt.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                     myFile.close()
                 except IOError, ioe:
-                    print "Error writing to error log. Quiting"
+                    logger("Error writing to error log. Quiting\n")
                     self.prt.end=True
                     return
 
@@ -69,13 +69,13 @@ class BitcasaDownload:
                     os.remove(destpath)
                 except OSError, e:
                     pass
-                print "Thread [%s]: Download failed %s%s\n\n" % (tthdnum,fulldest,item.name)
+                logger("Thread [%s]: Download failed %s%s\n\n" % (tthdnum,fulldest,item.name))
 
             self.prt.numthreads-=1
 
     def folderRecurse(self, fold, path, tthdnum):
 
-        print "Thread [%s]: %s" % (tthdnum,path)
+        logger("Thread [%s]: %s\n" % (tthdnum,path))
 
         if path.startswith('/') and self.dest.endswith('/'):
             fulldest="%s%s" %(self.dest[:-1], path)
@@ -105,12 +105,14 @@ class BitcasaDownload:
                 try:
                     nm = item.name
                     pt = item.path
+                    tfd = str("%s%s" % (fulldest,item.name))
+                    fexists = os.path.isfile(tfd) and os.path.getsize(tfd) >= item.size
                     cnti+=1
-                    print "Thread [%s]: %s of %s %s%s\n" % (tthdnum,cnti,total,fulldest,nm)
-                    if isinstance(item, BitcasaFile):
+                    #logger("Thread [%s]: %s of %s %s%s\n" % (tthdnum,cnti,total,fulldest,nm))
+                    if isinstance(item, BitcasaFile) and not fexists:
                         if self.numthreads >= self.maxthreads:
                             while self.numthreads > self.maxthreads and not self.end:
-                                #print "Waiting for download slot"
+                                #logger("Waiting for download slot\n")
                                 time.sleep(5)
                             if not self.end:
                                 self.numthreads+=1
@@ -118,17 +120,23 @@ class BitcasaDownload:
                                 thread.start()
                                 self.threads.append(thread)
                             else:
-                                print "Got exit signal while sleeping"
+                                logger("Got exit signal while sleeping\n")
                         elif not self.end:
                             self.numthreads+=1
                             thread = self.RunThreaded(item, self.numthreads, fulldest, self, fulltmp)
                             thread.start()
                             self.threads.append(thread)
                         else:
-                            print "Got exit signal. Stopping loop"
+                            logger("Got exit signal. Stopping loop\n")
                             break
                     elif isinstance(item, BitcasaFolder):
-                            self.folderRecurse(item, "%s/%s" % (path,nm), tthdnum)
+                        self.folderRecurse(item, "%s/%s" % (path,nm), tthdnum)
+                    elif fexists:
+                        logger("Thread [%s]: %s already exists. Skipping\n" % (tthdnum,nm))
+                        myFile = file("%sskippedfiles.txt" % self.tmp, 'a')
+                        myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
+                        myFile.close()
+
                 except Exception, e:
                     myFile = file("%serrorfiles.txt" % self.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
@@ -156,10 +164,10 @@ class BitcasaDownload:
 
     def process(self):
         bc = BitcasaClient("758ab3de", "5669c999ac340185a7c80c28d12a4319", "https://rosekings.com/bitcasafilelist/", self.at)
-        print "Getting base folder"
+        logger("Getting base folder\n")
         base = bc.get_folder(self.baseFolder)
 
-        print "Starting recursion"
+        logger("Starting recursion\n")
         self.folderRecurse(base, "", 0)
 
         myFile = file("%ssuccessfiles.txt" % self.tmp, 'w+')
@@ -168,8 +176,16 @@ class BitcasaDownload:
         myFile = file("%serrorfiles.txt" % self.tmp, 'w+')
         myFile.write("")
         myFile.close()
+        myFile = file("%sskippedfiles.txt" % self.tmp, 'w+')
+        myFile.write("")
+        myFile.close()
 
-print "Initializing Bitcasa"
+def logger(msg):
+    myfile = file("runlog.txt", "a")
+    myfile.write(msg)
+    myfile.close()
+
+logger("Initializing Bitcasa\n")
 b = BitcasaDownload()
 b.process()
-print "done"
+logger("done\n")
