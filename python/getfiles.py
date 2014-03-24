@@ -1,5 +1,5 @@
 from bitcasa import BitcasaClient, BitcasaFolder, BitcasaFile
-import threading, time, os, errno, sys, shutil
+import threading, time, os, errno, sys, shutil, math
 
 
 def convertSize(size):
@@ -164,10 +164,8 @@ class BitcasaDownload:
                     myFile = file("%serrorfiles.txt" % self.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                     myFile.close()
-
+            #Randomly log progress and speed statistics
             logger("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
-            for thread in self.threads:
-                thread.join()
 
     def __init__(self):
         #destination directory
@@ -194,25 +192,42 @@ class BitcasaDownload:
         logger("Getting base folder\n")
         base = bc.get_folder(self.baseFolder)
 
-        logger("Starting recursion\n")
-        self.folderRecurse(base, "", 0)
-
+        #initialize logfiles
+        try:
+            if not os.path.isdir(self.tmp):
+                os.makedirs(self.tmp)
+        except OSError as exc:
+            pass
         myFile = file("%ssuccessfiles.txt" % self.tmp, 'w+')
-        myFile.write("")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
         myFile.close()
         myFile = file("%serrorfiles.txt" % self.tmp, 'w+')
-        myFile.write("")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
         myFile.close()
         myFile = file("%sskippedfiles.txt" % self.tmp, 'w+')
-        myFile.write("")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
         myFile.close()
 
+        logger("Starting recursion\n")
+        self.folderRecurse(base, "", 0)
+        #wait for threads to finish downoading
+        for thread in self.threads:
+            thread.join()
+        #Log final speed and statistics
+        logger("finished %s at %s\n" % (convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
+
 def logger(msg):
-    myfile = file("runlog.txt", "a")
+    myfile = file("runlog2.txt", "a")
     myfile.write(msg)
     myfile.close()
+
+#initialize logger log
+myFile = file("runlog2.txt", 'w+')
+myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
+myFile.close()
 
 logger("Initializing Bitcasa\n")
 b = BitcasaDownload()
 b.process()
 logger("done\n")
+
