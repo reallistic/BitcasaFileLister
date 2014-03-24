@@ -18,9 +18,13 @@ For example, if you have the following in Bitcasa:
 
 <code>
 /documents/
+
 /documents/myfile1.ext
+
 /documents/otherfiles/
+
 /documents/otherfiles/otherfile.ext
+
 /rootfile.ext
 </code>
 
@@ -31,14 +35,21 @@ The result will be:
 
 <code>
 /mnt/tmp/documents/
+
 /mnt/tmp/documents/successfiles.txt
+
 /mnt/tmp/documents/errorfiles.txt
+
 /mnt/tmp/documents/skippedfiles.txt
+
 /mnt/tmp/documents/otherfiles/
 
 /mnt/networkdrives/c/documents/
+
 /mnt/networkdrives/c/documents/myfile1.ext
+
 /mnt/networkdrives/c/documents/otherfiles/
+
 /mnt/networkdrives/c/documents/otherfiles/otherfile.ext
 </code>
 
