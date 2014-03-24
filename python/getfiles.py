@@ -1,6 +1,22 @@
 from bitcasa import BitcasaClient, BitcasaFolder, BitcasaFile
 import threading, time, os, errno, sys, shutil
 
+
+def convertSize(size):
+   size_name = ("B","KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+   i = int(math.floor(math.log(size,1024)))
+   p = math.pow(1024,i)
+   s = round(size/p,2)
+   if (s > 0):
+       return '%s %s' % (s,size_name[i])
+   else:
+       return '0B'
+
+def getSpeed(size, tm):
+   speed = round(size/tm, 2)
+   speed = convertSize(speed)
+   return str(speed+"/s")
+
 class BitcasaDownload:
     class RunThreaded(threading.Thread):
         def __init__(self, item, tthdnum, fulldest, prt, fulltmp):
@@ -18,8 +34,10 @@ class BitcasaDownload:
             fulltmp=self.fulltmp
             nm=item.name
             pt=item.path
-            sz=float(item.size/1024/1024)
-            logger("Thread [%s]: %s size %smb\n" % (tthdnum,item.name, sz))
+            sz=convertSize(item.size)
+            szb=item.size
+            st=time.time()
+            logger("Thread [%s]: %s size %s\n" % (tthdnum,item.name, sz))
             try:
                 if not os.path.isdir(fulltmp):
                     os.makedirs(fulltmp)
@@ -39,13 +57,18 @@ class BitcasaDownload:
                 for byts in src:
                     if not self.prt.end:
                         myFile.write(byts)
+                        self.prt.bytestotal+=len(byts)
                     else:
                         logger("Thread [%s]: Got exit signal. Quiting\n" % tthdnum)
                         break
                 myFile.close()
                 if not self.prt.end:
+                    self.prt.bytestotal+=szb
+                    logger("Thread [%s]: %s downloaded at %s\n" % (tthdnum, sz, getSpeed(szb,(time.time()-st))))
                     logger("Thread [%s]: %s copying from temp to dest\n" % (tthdnum,item.name))
+                    st=time.time()
                     shutil.copy2(tmppath, destpath)
+                    logger("Thread [%s]: %s copied at %s\n" % (tthdnum, sz, getSpeed(szb,time.time()-st)))
                     try:
                         os.remove(tmppath)
                     except OSError, e:
@@ -141,6 +164,8 @@ class BitcasaDownload:
                     myFile = file("%serrorfiles.txt" % self.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                     myFile.close()
+
+            logger("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
             for thread in self.threads:
                 thread.join()
 
@@ -153,11 +178,13 @@ class BitcasaDownload:
         self.baseFolder=""
         #Access token
         self.at=""
-        self.maxthreads=2
+        self.maxthreads=5
         self.numthreads=0
         self.end=False
         self.cnt=0
         self.threads = []
+        self.st=time.time()
+        self.bytestotal=0
 
         #Not used
         self.maxsleepcycles = 3
