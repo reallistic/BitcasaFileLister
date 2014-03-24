@@ -1,4 +1,4 @@
-#BitcasaFileLister
+BitcasaFileLister
 =================
 
 List files in your Bitcasa drive 
@@ -11,7 +11,7 @@ You can access a hosted version of this at [Rosekings.com](https://rosekings.com
 This becomes useful in the second part:
 
 #BitcasaFileFetcher
-===================
+
 
 The filefetcher is a very small command line python application that will recursively fetch files from bitcasa via the API and save them to a designated path. This application is multithreaded to allow multiple downloads at the same time.
 The filefetcher must be manually configured to have your access token, starting location (bitcasa base64 encoded path), target, and temp location.
@@ -52,8 +52,30 @@ The result will be:
 This script was developed in order to move files from bitcasa to network storage. Although it uses caching, it does not clof up the system with temp files.
 As soon as a file is copied from temp to destination, it is deleted thus minimizing caching impact.
 
+##Usage
+Change the following lines [here](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/python/getfiles.py#L173-L181)
+
+```
+  #destination directory
+  self.dest=""
+  #temp directory
+  self.tmp=""
+  #bitcasa base64 encdoded path found by using either:
+  #   the hosted tool at: https://rosekings.com/bitcasafilelist/
+  #   A self-hosted cloned copy of the BitcasaFileLister php tool
+  self.baseFolder=""
+  #Access token
+  self.at=""
+  
+  # for some reason of which I have not bothered to figure out,
+  # this is currently downloading with 1 more thread than what is specified here.
+  # For example, with the set value 6 files will download at one time
+  # This does NOT include the parent thread
+  self.maxthreads=5
+```
+
 #Future Plans
-================
+
 
 * Direct upload to [OpenDrive](https://www.opendrive.com) via API
 * Copying lists of files instead of entire directories
