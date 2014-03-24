@@ -21,6 +21,9 @@ This script is particularly useful for:
 * Downloading large files and directories locally
 * Downloading/copying large amounts of files from Bitcasa
 
+
+**NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
+The best way to run this for long operations is: ```python getfiles.py > runlog.txt 2>&1 &```
 For example, if you have the following in Bitcasa:
 
 ```
