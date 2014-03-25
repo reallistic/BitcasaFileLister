@@ -1,0 +1,61 @@
+2014-03-24 16:22:11
+Initializing Bitcasa
+Getting base folder
+Starting recursion
+Thread [0]: 
+Thread [0]: /bdist.win32
+Thread [0]: /lib
+Thread [0]: /lib/transmissionrpc
+Thread [1]: client.py size 42.1 KB
+Thread [2]: httphandler.py size 3.47 KB
+Thread [3]: utils.py size 6.65 KB
+Thread [4]: error.py size 1.88 KB
+Thread [5]: constants.py size 27.64 KB
+Thread [3]: 6.65 KB downloaded at 73.51 B/s
+Thread [3]: utils.py copying from temp to dest
+Thread [2]: 3.47 KB downloaded at 36.98 B/s
+Thread [2]: httphandler.py copying from temp to dest
+Thread [1]: 42.1 KB downloaded at 448.84 B/s
+Thread [1]: client.py copying from temp to dest
+Thread [6]: torrent.py size 16.16 KB
+Thread [4]: 1.88 KB downloaded at 33.54 B/s
+Thread [4]: error.py copying from temp to dest
+Thread [6]: 16.16 KB downloaded at 17.58 KB/s
+Thread [6]: torrent.py copying from temp to dest
+Thread [5]: 27.64 KB downloaded at 4.24 KB/s
+Thread [5]: constants.py copying from temp to dest
+Thread [2]: 3.47 KB copied at 88.97 B/s
+Thread [2]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/httphandler.py
+
+Thread [6]: __init__.py size 844.0 B
+Thread [6]: 844.0 B downloaded at 290.08 B/s
+Thread [6]: __init__.py copying from temp to dest
+Thread [3]: 6.65 KB copied at 137.35 B/s
+Thread [3]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/utils.py
+
+Thread [1]: 42.1 KB copied at 842.26 B/s
+Thread [6]: 16.16 KB copied at 335.78 B/s
+Thread [4]: 1.88 KB copied at 39.03 B/s
+Thread [1]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/client.py
+
+Thread [6]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/torrent.py
+
+finished /lib/transmissionrpc 197.45 KB at 1.01 KB/s
+Thread [6]: session.py size 3.75 KB
+Thread [5]: 27.64 KB copied at 574.83 B/s
+finished /lib 197.45 KB at 1.01 KB/s
+finished  197.45 KB at 1.01 KB/s
+Thread [5]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/constants.py
+
+Thread [4]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/error.py
+
+Thread [6]: 3.75 KB downloaded at 4.01 KB/s
+Thread [6]: session.py copying from temp to dest
+Thread [6]: 844.0 B copied at 46.71 B/s
+Thread [6]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/__init__.py
+
+Thread [6]: 3.75 KB copied at 178.95 B/s
+Thread [6]: Finished download /mnt/opendrive/dump/build/lib/transmissionrpc/session.py
+
+finished 204.94 KB at 966.09 B/s
+done
