@@ -1,5 +1,5 @@
 from bitcasa import BitcasaClient, BitcasaFolder, BitcasaFile
-import threading, time, os, errno, sys, shutil
+import threading, time, os, errno, sys, shutil, math
 
 
 def convertSize(size):
@@ -164,21 +164,21 @@ class BitcasaDownload:
                     myFile = file("%serrorfiles.txt" % self.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                     myFile.close()
-
+            #Randomly log progress and speed statistics
             logger("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
-            for thread in self.threads:
-                thread.join()
-
-    def __init__(self):
+    def __init__(self, depth, tmp, src, dst, rec, local, at, mt):
         #destination directory
-        self.dest=""
+        self.dest=dst
         #temp directory
-        self.tmp=""
+        self.tmp=tmp
         #bittcasa base64 encdoded path
-        self.baseFolder=""
+        self.baseFolder=src
         #Access token
-        self.at=""
-        self.maxthreads=5
+        self.at=at
+        self.maxthreads=mt
+        self.local=local
+        self.rec=rec
+        self.depth=depth
         self.numthreads=0
         self.end=False
         self.cnt=0
@@ -186,7 +186,7 @@ class BitcasaDownload:
         self.st=time.time()
         self.bytestotal=0
 
-        #Not used
+        #Not yet used
         self.maxsleepcycles = 3
 
     def process(self):
@@ -194,25 +194,108 @@ class BitcasaDownload:
         logger("Getting base folder\n")
         base = bc.get_folder(self.baseFolder)
 
-        logger("Starting recursion\n")
-        self.folderRecurse(base, "", 0)
-
+        #initialize logfiles
+        try:
+            if not os.path.isdir(self.tmp):
+                os.makedirs(self.tmp)
+        except OSError as exc:
+            pass
         myFile = file("%ssuccessfiles.txt" % self.tmp, 'w+')
-        myFile.write("")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
         myFile.close()
         myFile = file("%serrorfiles.txt" % self.tmp, 'w+')
-        myFile.write("")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
         myFile.close()
         myFile = file("%sskippedfiles.txt" % self.tmp, 'w+')
-        myFile.write("")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
         myFile.close()
 
+        logger("Starting recursion\n")
+        self.folderRecurse(base, "", 0)
+        #wait for threads to finish downoading
+        for thread in self.threads:
+            thread.join()
+        #Log final speed and statistics
+        logger("finished %s at %s\n" % (convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
+
 def logger(msg):
-    myfile = file("runlog.txt", "a")
+    myfile = file(_log, "a")
     myfile.write(msg)
     myfile.close()
 
-logger("Initializing Bitcasa\n")
-b = BitcasaDownload()
-b.process()
-logger("done\n")
+
+def main(argv):                         
+    try:
+        opts, args = getopt.getopt(argv, "hlr:t:s:d:a:m:", ["help", "local", "depth=", "temp=", "src=", "dst=", "no-recursion", "log=", "token=", "maxthreads="])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+    local=False
+    tmp=""
+    src=""
+    dst=""
+    depth=-1
+    mt=4
+    at=""
+    global _log
+    _log="runlog.txt"
+    rec=True
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif opt in ("-l", "--local"):
+            local=True
+        elif opt in ("-r", "--depth"):
+            try:
+                depth=int(arg)
+            except Exception, e:
+                sys.stderr.write("Please supply an integer for folder depth\n")
+                usage()
+                sys.exit(2)
+        elif opt in ("-t", "--temp"):
+            tmp=arg
+        elif opt in ("-s", "--src"):
+            src=arg
+        elif opt in ("-d", "--dst"):
+            dst=arg
+        elif opt in ("--no-recursion"):
+            rec=False
+        elif opt in ("--log"):
+            _log=arg
+        elif opt in ("-m", "--maxthreads");
+            try:
+                mt=int(arg)-1
+            except Exception, e:
+                sys.stderr.write("Please supply an integer for maxthreads\n")
+                usage()
+                sys.exit(2)
+        elif opt in ("-a", "--token"):
+            at=arg
+        else:
+            usage()
+            sys.exit(2)
+    if depth > 0 and not rec:
+        sys.stdout.write("None 0 depth and --no-recursion parameter present. Assuming recusion\n")
+        rec=True
+    if (tmp == "" and not local) or dst=="" or src=="" or at=="":
+        sys.stderr.write("Please supply access token, temp, source, and destination locations. If this is a local copy, then specify -l or --local")
+        usage()
+        sys.exit(2)
+    
+    stropts = ",".join(opts)
+    sys.stdout.write(stropts + "\n")
+    sys.exit()
+    
+    #initialize logger log
+    myFile = file(_log, 'w+')
+    myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
+    myFile.close()
+
+    logger("Initializing Bitcasa\n")
+    b = BitcasaDownload(depth, tmp, src, dst, rec, local, at, mt)
+    b.process()
+    logger("done\n")
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
