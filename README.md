@@ -57,7 +57,9 @@ This script was developed in order to move files from bitcasa to network storage
 As soon as a file is copied from temp to destination, it is deleted thus minimizing caching impact.
 
 ##Usage
-Change the following lines [here](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/python/getfiles.py#L173-L181)
+Please use [this](https://github.com/rxsegrxup/BitcasaFileLister/blob/59850a21aeab8ce702998efaa3520b9df1f0a77f/python/getfiles.py) commit of the file.
+
+Change the following lines [here](https://github.com/rxsegrxup/BitcasaFileLister/blob/59850a21aeab8ce702998efaa3520b9df1f0a77f/python/getfiles.py#L174-L181)
 
 ```
   #destination directory
