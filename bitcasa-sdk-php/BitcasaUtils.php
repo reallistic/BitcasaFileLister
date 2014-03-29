@@ -15,11 +15,13 @@ function recurseFolders($item,$client){
 	}
 }
 
-function basicCurlGet($url){
+function basicCurlGet($url, $headers=NULL){
 	$ch = curl_init(); 
     // set url 
     curl_setopt($ch, CURLOPT_URL, $url); 
-
+    if(is_array($headers)){
+    	curl_setopt($ch,CURLOPT_HTTPHEADER,$headers);
+    }
     //return the transfer as a string 
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
 
