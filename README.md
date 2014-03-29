@@ -73,10 +73,10 @@ For example, if you have the following in Bitcasa:
 /rootfile.ext
 ```
 
-supply the following src: ```/documents/``` NOTE: this will need to be the base64 encoded version
-use the following temp: ```/mnt/tmp/documents/```
-and the following dst: ```/mnt/networkdrives/c/documents/```
-The result will be:
+supply the following src: ```/documents/``` NOTE: this will need to be the base64 encoded version<br>
+use the following temp: ```/mnt/tmp/documents/```<br>
+and the following dst: ```/mnt/networkdrives/c/documents/```<br>
+<br>The result will be:
 
 ```
 /mnt/tmp/documents/
