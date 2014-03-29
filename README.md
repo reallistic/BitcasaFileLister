@@ -92,37 +92,12 @@ and the following dst: ```/mnt/networkdrives/c/documents/```<br>
 /mnt/networkdrives/c/documents/otherfiles/otherfile.ext
 ```
 
-This script was developed in order to move files from bitcasa to network storage. Although it uses caching, it does not clof up the system with temp files.
+This script was developed in order to move files from bitcasa to network storage. Although it uses caching, it does not clog up the system with temp files.
 As soon as a file is copied from temp to destination, it is deleted thus minimizing caching impact.
-
-##Usage
-Please use [this](https://github.com/rxsegrxup/BitcasaFileLister/blob/59850a21aeab8ce702998efaa3520b9df1f0a77f/python/getfiles.py) commit of the file.
-
-Change the following lines [here](https://github.com/rxsegrxup/BitcasaFileLister/blob/59850a21aeab8ce702998efaa3520b9df1f0a77f/python/getfiles.py#L174-L181)
-
-```
-  #destination directory
-  self.dest=""
-  #temp directory
-  self.tmp=""
-  #bitcasa base64 encdoded path found by using either:
-  #   the hosted tool at: https://rosekings.com/bitcasafilelist/
-  #   A self-hosted cloned copy of the BitcasaFileLister php tool
-  self.baseFolder=""
-  #Access token
-  self.at=""
-  
-  # for some reason of which I have not bothered to figure out,
-  # this is currently downloading with 1 more thread than what is specified here.
-  # For example, with the set value 6 files will download at one time
-  # This does NOT include the parent thread
-  self.maxthreads=5
-```
 
 #Future Plans
 
 
-* Direct upload to [OpenDrive](https://www.opendrive.com) via API
 * Copying lists of files instead of entire directories
 * Disable recursion
 * Disable temp directory if just copying locally
