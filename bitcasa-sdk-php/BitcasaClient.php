@@ -421,6 +421,18 @@ class BitcasaClient
 		return $this->infinite_drive;
 	}
 
+	/**
+	 * getFolderFromPath - The folder representing the Bitcasa Folder at the given path
+	 *
+	 * @throws BitcasaException if a Bitcasa Client or server error occurred
+	 * @throws HttpException if an HTTP error occurred
+	 * @return instance of BitcasaInfiniteDrive
+	 */
+	public function getFolderFromPath($path = "/")
+	{
+		return $this->doListFolder($path);
+	}
+
 
 	/*
 	 * Private class methods
