@@ -4,6 +4,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Bitcasa File lister</title>
         <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
 	</head>
 	<body>
 		<nav class="navbar navbar-default" role="navigation">
