@@ -86,6 +86,8 @@ class BitcasaDownload:
                     myFile = file("%serrorfiles.txt" % self.prt.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                     myFile.close()
+                    if os.path.isfile(tmppath):
+                        os.remove(tmppath)
                 except IOError, ioe:
                     logger("Error writing to error log. Quiting\n")
                     self.prt.end=True
