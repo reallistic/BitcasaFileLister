@@ -47,8 +47,9 @@ optional arguments:
                         downloading. default is 5
   --local               Only store file locally. Do not use temp dir
   --norecursion         Do not go below the src folder. (Same as --depth=0)
-
+```
 ##Run examples:
+```
 python2.7 getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
 ```
 * Run in background
