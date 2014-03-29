@@ -240,7 +240,7 @@ def main(argv):
     parser.add_argument("-t","--temp", help="The temp dir to store downloaded files. (Should be a local folder)")
     parser.add_argument("-l","--log", help="Full path to log file")
     parser.add_argument("--depth", type=int, help="Specify depth of folder traverse. 0 is same as --norecursion")
-    parser.add_argument("-m", "--threads", type=int, help="Specify the max number of threads to use for downloading")
+    parser.add_argument("-m", "--threads", type=int, help="Specify the max number of threads to use for downloading. Default is 5")
     parser.add_argument("--local", help="Only store file locally. Do not use temp dir", action="store_true")
     parser.add_argument("--norecursion", help="Do not go below the src folder. (Same as --depth=0)", action="store_true")
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")

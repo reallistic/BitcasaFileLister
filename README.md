@@ -23,7 +23,45 @@ This script is particularly useful for:
 
 
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
-The best way to run this for long operations is: ```python getfiles.py > runlog.txt 2>&1 &```
+#Usage
+```
+getfiles.py [-h] [-t TEMP] [-l LOG] [--depth DEPTH] [-m THREADS]
+                   [--local] [--norecursion] [--verbose]
+                   src dst token
+
+positional arguments:
+  src                   The Bitcasa base64 path for file source
+  dst                   The final destination root dir or your files
+  token                 The access token from Bitcasa. To get one navigate to
+                        https://rosekings.com/bitcasafilelist
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -t TEMP, --temp TEMP  The temp dir to store downloaded files. (Should be a
+                        local folder)
+  -l LOG, --log LOG     Full path to log file
+  --depth DEPTH         Specify depth of folder traverse. 0 is same as
+                        --norecursion
+  -m THREADS, --threads THREADS
+                        Specify the max number of threads to use for
+                        downloading. default is 5
+  --local               Only store file locally. Do not use temp dir
+  --norecursion         Do not go below the src folder. (Same as --depth=0)
+
+##Run examples:
+python2.7 getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
+```
+* Run in background
+* Direct stdout and stderr to runlog.txt
+* All logging will be sent to /mnt/tmp/documents/runlog.txt by default
+```
+python2.7 getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt > /var/log/bitcasafilelist/runlog.txt 2>&1 &
+```
+* Run in background
+* Direct stdout and stderr to /var/log/bitcasafilelist/runlog.txt
+* All logging will be sent to /var/log/bitcasafilelist/runlog.txt
+
+
 
 For example, if you have the following in Bitcasa:
 
@@ -35,9 +73,9 @@ For example, if you have the following in Bitcasa:
 /rootfile.ext
 ```
 
-supply the following start path: ```/documents/```
-use the following temp dir: ```/mnt/tmp/documents/```
-and the following destination: ```/mnt/networkdrives/c/documents/```
+supply the following src: ```/documents/``` NOTE: this will need to be the base64 encoded version
+use the following temp: ```/mnt/tmp/documents/```
+and the following dst: ```/mnt/networkdrives/c/documents/```
 The result will be:
 
 ```
