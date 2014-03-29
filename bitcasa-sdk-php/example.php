@@ -142,8 +142,8 @@
                         else{
                             echo $item->getName();
                         }
-                        echo "</td><td>" . $item->getPath() . "</td></tr>"
-                        . "</td><td class=\"hideSmallScreen\">" . $item->getSyncType();
+                        echo "</td><td>" . $item->getPath() . "</td>"
+                        . "</td><td class=\"hideSmallScreen\">" . $item->getSyncType()."</tr>";
                 }
                 foreach ($oitem as $key => $item) {
                     echo "<tr><td>";
@@ -153,8 +153,8 @@
                         else{
                             echo $item->getName();
                         }
-                        echo "</td><td>" . $item->getPath() . "</td></tr>"
-                        . "</td><td class=\"hideSmallScreen\">" . $item->getSyncType();
+                        echo "</td><td>" . $item->getPath() . "</td>"
+                        . "</td><td class=\"hideSmallScreen\">" . $item->getSyncType()."</tr>";
                 }
 
                 echo "</table>";
