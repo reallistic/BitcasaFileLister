@@ -51,9 +51,9 @@ class BitcasaDownload:
                 except OSError as exc:
                     pass
             try:
-                src = item.read()
                 destpath = str("%s%s" % (fulldest,item.name))
                 tmppath = str("%s%s" % (fulltmp,item.name))
+                src = item.read()                
                 myFile = file(tmppath, 'w+')
 
                 for byts in src:
