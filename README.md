@@ -1,11 +1,10 @@
 BitcasaFileLister
 =================
 
-List files in your Bitcasa drive 
+List and download files in your Bitcasa drive 
 
 This repo consists of two parts:
-Embeded is a a php application that will allow you to login via OAuth, retreive your access token, and get a listing of all the files in your Bitcasa drive.
-The listing also provides capability to specify what depth you want the script to go.
+Embeded is a a php application that will allow you to login via OAuth, retreive your access token, get a listing of all the files in your Bitcasa drive with their base64 encoded path, and download individual files via the Bitcasa API.
 You can access a hosted version of this at [Rosekings.com](https://rosekings.com/bitcasafilelist/)
 
 This becomes useful in the second part:
@@ -93,12 +92,10 @@ and the following dst: ```/mnt/networkdrives/c/documents/```<br>
 ```
 
 This script was developed in order to move files from bitcasa to network storage. Although it uses caching, it does not clog up the system with temp files.
-As soon as a file is copied from temp to destination, it is deleted thus minimizing caching impact.
+As soon as a file is copied from temp to destination, it is deleted thus minimizing caching impact. If there is an error, the file is also deleted.
 
 #Future Plans
 
 
 * Copying lists of files instead of entire directories
-* Disable recursion
-* Disable temp directory if just copying locally
 * Python Web Application instead of command line
