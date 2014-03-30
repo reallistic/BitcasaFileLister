@@ -71,8 +71,7 @@
             $urlprefix=($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . //($_SERVER["REQUEST_URI"]) . 
                     "/bitcasafilelist/bitcasa-sdk-php/example.php?access_token=$at&root=";
 
-            $urlprefix2=($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . //($_SERVER["REQUEST_URI"]) . 
-                    "/bitcasafilelist/bitcasa-sdk-php/getfile.php?access_token=$at&path=";
+            $urlprefix2="https://developer.api.bitcasa.com/v1/files/";
             if(isset($_GET['root'])){
                 $root=$_GET["root"];
                 if($root !="/" && strlen($root) > 1){
@@ -144,7 +143,7 @@
                         }
                         else{
                             //echo $item->getName();
-                            echo "<a href='".$urlprefix2.$item->getPath()."&name=".$item->getName() ."' >" . $item->getName() ."</a>";
+                            echo "<a href='".$urlprefix2.$item->getName()."?access_token=$at&path=".$item->getPath()."' >" . $item->getName() ."</a>";
                         }
                         echo "</td><td>" . $item->getPath() . "</td>"
                         . "</td><td class=\"hideSmallScreen\">" . $item->getSyncType()."</tr>";
@@ -156,7 +155,7 @@
                         }
                         else{
                             //echo $item->getName();
-                            echo "<a href='".$urlprefix2.$item->getPath()."&name=".$item->getName() ."' >" . $item->getName() ."</a>";
+                            echo "<a href='".$urlprefix2.$item->getName()."?access_token=$at&path=".$item->getPath()."' >" . $item->getName() ."</a>";
                         }
                         echo "</td><td>" . $item->getPath() . "</td>"
                         . "</td><td class=\"hideSmallScreen\">" . $item->getSyncType()."</tr>";
