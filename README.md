@@ -1,5 +1,6 @@
 BitcasaFileLister
 =================
+##NOTE. This application is still under development. Use it ONLY if you know what you are doing.
 
 List and download files in your Bitcasa drive 
 
