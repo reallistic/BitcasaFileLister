@@ -23,7 +23,7 @@ catch (Exception $ex) {
 	die($ex->getMessage());
 }
 
-header('Location: example.php?access_token=' . $client->getAccessToken() ,true, 302);
+header('Location: /bitcasafilelist/files.php?access_token=' . $client->getAccessToken() ,true, 302);
 exit;
 
 ?>

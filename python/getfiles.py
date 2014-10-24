@@ -1,21 +1,28 @@
 from bitcasa import BitcasaClient, BitcasaFolder, BitcasaFile
 import threading, time, os, errno, sys, shutil, math
-import argparse
+import argparse, wget, urllib, uuid
+import logger
+BASE_URL = "https://developer.api.bitcasa.com/v1/files/"
+log = None
 
 def convertSize(size):
-   size_name = ("B","KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-   i = int(math.floor(math.log(size,1024)))
-   p = math.pow(1024,i)
-   s = round(size/p,2)
-   if (s > 0):
-       return '%s %s' % (s,size_name[i])
-   else:
-       return '0B'
+    if size <= 0:
+        return '0B'
+    size_name = ("B","KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size,1024)))
+    p = math.pow(1024,i)
+    s = round(size/p,2)
+    if (s > 0):
+        return '%s %s' % (s,size_name[i])
+    else:
+        return '0B'
 
 def getSpeed(size, tm):
-   speed = round(size/tm, 2)
-   speed = convertSize(speed)
-   return str(speed+"/s")
+    if size <= 0 or tm <= 0:
+        return "0B/s"
+    speed = round(size/tm, 2)
+    speed = convertSize(speed)
+    return str(speed+"/s")
 
 class BitcasaDownload:
     class RunThreaded(threading.Thread):
@@ -28,6 +35,8 @@ class BitcasaDownload:
             self.fulltmp = fulltmp
 
         def run(self):
+            global BASE_URL, log
+
             fulldest=self.fulldest
             item=self.item
             tthdnum=self.tthdnum
@@ -37,8 +46,9 @@ class BitcasaDownload:
             sz=convertSize(item.size)
             szb=item.size
             st=time.time()
-            logger("Thread [%s]: %s size %s\n" % (tthdnum,item.name, sz))
-
+            log.info("Thread [%s]: %s size %s" % (tthdnum,item.name, sz))
+            params = {"access_token":self.prt.at, "path":pt}
+            apidownloaduri = "%s%s?%s" % (BASE_URL,urllib.quote_plus(nm),urllib.urlencode(params))
             try:
                 if not os.path.isdir(fulltmp):
                     os.makedirs(fulltmp)
@@ -51,78 +61,57 @@ class BitcasaDownload:
                 except OSError as exc:
                     pass
             try:
-                destpath = str("%s%s" % (fulldest,item.name))
-                tmppath = str("%s%s" % (fulltmp,item.name))
-                src = item.read()                
-                myFile = file(tmppath, 'w+')
-
-                for byts in src:
-                    if not self.prt.end:
-                        myFile.write(byts)
-                        self.prt.bytestotal+=len(byts)
-                    else:
-                        logger("Thread [%s]: Got exit signal. Quiting\n" % tthdnum)
-                        break
-                myFile.close()
+                destpath = os.path.join(fulldest,item.name)
+                tmppath = os.path.join(fulltmp,item.name)
+                log.debug("Thread [%s]: %s" % (tthdnum, apidownloaduri))
+                log.debug("Thread [%s]: Downloading file to %s" % (tthdnum, tmppath))
+                wget.download(apidownloaduri,out=tmppath)
+                log.debug("Thread [%s]: Download finished." % tthdnum)
                 if not self.prt.end:
                     self.prt.bytestotal+=szb
-                    logger("Thread [%s]: %s downloaded at %s\n" % (tthdnum, sz, getSpeed(szb,(time.time()-st))))
-                    logger("Thread [%s]: %s copying from temp to dest\n" % (tthdnum,item.name))
+                    log.debug("Thread [%s]: %s downloaded at %s" % (tthdnum, sz, getSpeed(szb,(time.time()-st))))
+                    log.debug("Thread [%s]: %s copying from temp to dest" % (tthdnum,item.name))
                     st=time.time()
                     if not self.prt.local:
                         shutil.copy2(tmppath, destpath)
-                        logger("Thread [%s]: %s copied at %s\n" % (tthdnum, sz, getSpeed(szb,time.time()-st)))
+                        log.debug("Thread [%s]: %s copied at %s" % (tthdnum, sz, getSpeed(szb,time.time()-st)))
                         try:
                             os.remove(tmppath)
                         except OSError, e:
+                            log.warn("Failed cleaning up tmp file %s" % tmppath)
                             pass
                     myFile = file("%ssuccessfiles.txt" % self.prt.tmp, 'a')
-                    myFile.write("%s\r\n" % destpath)
+                    myFile.write("%s\n" % destpath)
                     myFile.close()
 
-                    logger("Thread [%s]: Finished download %s%s\n\n" % (tthdnum,fulldest,item.name))
+                    log.info("Thread [%s]: Finished download %s" % (tthdnum,destpath))
             except Exception, e:
                 try:
                     myFile = file("%serrorfiles.txt" % self.prt.tmp, 'a')
-                    myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
+                    myFile.write("%s%s %s\n" % (fulldest,nm,pt))
                     myFile.close()
                     if os.path.isfile(tmppath):
                         os.remove(tmppath)
                 except IOError, ioe:
-                    logger("Error writing to error log. Quiting\n")
+                    log.error("Error writing to error log. Quiting")
                     self.prt.end=True
                     return
-
                 try:
                     os.remove(destpath)
                 except OSError, e:
                     pass
-                logger("Thread [%s]: Download failed %s%s\n\n" % (tthdnum,fulldest,item.name))
+                log.error("Thread [%s]: Download failed %s\n%s" % (tthdnum,tmppath, e.strerror))
 
             self.prt.numthreads-=1
 
     def folderRecurse(self, fold, path, tthdnum, depth):
+        global log
 
-        logger("Thread [%s]: %s\n" % (tthdnum,path))
-
-        if path.startswith('/') and self.dest.endswith('/'):
-            fulldest="%s%s" %(self.dest[:-1], path)
-        elif not path.startswith('/') and not self.dest.endswith('/'):
-            fulldest="%s/%s" %(self.dest, path)
-        else:
-            fulldest="%s%s" %(self.dest, path)
-        if not fulldest.endswith("/"):
-            fulldest+="/"
-
-        if path.startswith('/') and self.tmp.endswith('/'):
-            fulltmp="%s%s" %(self.tmp[:-1], path)
-        elif not path.startswith('/') and not self.tmp.endswith('/'):
-            fulltmp="%s/%s" %(self.tmp, path)
-        else:
-            fulltmp="%s%s" %(self.tmp, path)
-        if not fulltmp.endswith("/"):
-            fulltmp+="/"
-
+        log.info("Thread [%s]: %s" % (tthdnum,path))
+        fulldest = os.path.join(self.dest, path)
+        fulltmp = os.path.join(self.tmp, path)
+        log.debug("Dest path %s" % fulldest)
+        log.debug("Tmp path %s" % fulltmp)
         if isinstance(fold, BitcasaFolder):
             total = len(fold.items)
             cnti=0
@@ -136,11 +125,9 @@ class BitcasaDownload:
                     tfd = str("%s%s" % (fulldest,item.name))
                     fexists = os.path.isfile(tfd) and os.path.getsize(tfd) >= item.size
                     cnti+=1
-                    #logger("Thread [%s]: %s of %s %s%s\n" % (tthdnum,cnti,total,fulldest,nm))
                     if isinstance(item, BitcasaFile) and not fexists:
                         if self.numthreads >= self.maxthreads:
                             while self.numthreads > self.maxthreads and not self.end:
-                                #logger("Waiting for download slot\n")
                                 time.sleep(5)
                             if not self.end:
                                 self.numthreads+=1
@@ -148,32 +135,34 @@ class BitcasaDownload:
                                 thread.start()
                                 self.threads.append(thread)
                             else:
-                                logger("Got exit signal while sleeping\n")
+                                log.debug("Got exit signal while sleeping")
                         elif not self.end:
                             self.numthreads+=1
                             thread = self.RunThreaded(item, self.numthreads, fulldest, self, fulltmp)
                             thread.start()
                             self.threads.append(thread)
                         else:
-                            logger("Got exit signal. Stopping loop\n")
+                            log.debug("Got exit signal. Stopping loop")
                             break
                     elif isinstance(item, BitcasaFolder):
                         if (self.depth == None or self.depth > depth) and self.rec:
                             self.folderRecurse(item, "%s/%s" % (path,nm), tthdnum, (depth+1))
                     elif fexists:
-                        logger("Thread [%s]: %s already exists. Skipping\n" % (tthdnum,nm))
+                        log.info("Thread [%s]: %s already exists. Skipping" % (tthdnum,nm))
                         myFile = file("%sskippedfiles.txt" % self.tmp, 'a')
                         myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                         myFile.close()
 
                 except Exception, e:
+                    log.error("Thread [%s]: Error processing file %s\n%s" % (tthdnum,nm,e.strerror))
                     myFile = file("%serrorfiles.txt" % self.tmp, 'a')
                     myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                     myFile.close()
             #Randomly log progress and speed statistics
-            logger("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
+            log.info("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
     def __init__(self, depth, tmp, src, dst, rec, local, at, mt):
-        logger(" depth: %s\n tmp: %s\n src: %s\n dst: %s\n rec: %s\n local: %s\n at: %s\n mt: %s\n" % (depth, tmp, src, dst, rec, local, at, mt))
+        global log
+        log.debug(" depth: %s\n tmp: %s\n src: %s\n dst: %s\n rec: %s\n local: %s\n at: %s\n mt: %s" % (depth, tmp, src, dst, rec, local, at, mt))
         #destination directory
         self.dest=dst
         #temp directory
@@ -184,7 +173,7 @@ class BitcasaDownload:
         self.at=at
         self.maxthreads=mt
         if self.maxthreads == None or self.maxthreads == 0:
-            logger("Using default max threads value of 5\n")
+            log.info("Using default max threads value of 5")
             self.maxthreads=5
         self.local=local
         self.rec=rec
@@ -200,8 +189,9 @@ class BitcasaDownload:
         self.maxsleepcycles = 3
 
     def process(self):
+        global log
         bc = BitcasaClient("758ab3de", "5669c999ac340185a7c80c28d12a4319", "https://rosekings.com/bitcasafilelist/", self.at)
-        logger("Getting base folder\n")
+        log.debug("Getting base folder")
         base = bc.get_folder(self.baseFolder)
 
         #initialize logfiles
@@ -211,30 +201,31 @@ class BitcasaDownload:
         except OSError as exc:
             pass
         myFile = file("%ssuccessfiles.txt" % self.tmp, 'w+')
-        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "")
         myFile.close()
         myFile = file("%serrorfiles.txt" % self.tmp, 'w+')
-        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "")
         myFile.close()
         myFile = file("%sskippedfiles.txt" % self.tmp, 'w+')
-        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
+        myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "")
         myFile.close()
 
-        logger("Starting recursion\n")
+        log.debug("Starting recursion")
         self.folderRecurse(base, "", 0,0)
         #wait for threads to finish downoading
         for thread in self.threads:
             thread.join()
         #Log final speed and statistics
-        logger("finished %s at %s\n" % (convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
+        log.info("finished %s at %s\n" % (convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
 
-def logger(msg):
+"""def log.info(msg):
     myfile = file(_log, "a")
     myfile.write(msg)
     myfile.close()
-
+"""
 
 def main(argv):
+    global log
     parser = argparse.ArgumentParser()
     parser.add_argument("src", help="The Bitcasa base64 path for file source")
     parser.add_argument("dst", help="The final destination root dir or your files")
@@ -249,7 +240,7 @@ def main(argv):
     args = parser.parse_args()
    
 
-    global _log
+    _log = ""
     if (args.log == None or args.log == "") and not args.local:
         _log = args.temp+"runlog.txt"
     elif (args.log == None or args.log == "") and args.local:
@@ -258,27 +249,25 @@ def main(argv):
         _log = args.log
 
     #initialize logger log
-    myFile = file(_log, 'w+')
-    myFile.write(time.strftime("%Y-%m-%d %H:%M:%S") + "\n")
-    myFile.close()
+    log = logger.setup(logfile=_log, debug=args.verbose)
 
     rec= not args.norecursion
     if args.depth > 0 and args.norecursion:
-        logger("Note: Non 0 depth and --no-recursion parameter present. Assuming recusion\n")
+        log.info("Note: Non 0 depth and --no-recursion parameter present. Assuming recusion")
         rec=True
     if (args.temp == "" and not args.local) or args.dst=="" or args.src=="" or args.token=="":
         sys.stderr.write("Please supply access token, temp, source, and destination locations. If this is a local copy, then specify -l or --local")
         sys.exit(2)
     elif args.temp != None and args.temp != "" and args.local:
-        logger("Local specified. Ignoring temp")
+        log.info("Local specified. Ignoring temp")
         args.temp = args.dst
     elif args.local:
         args.temp = args.dst
-    logger("Initializing Bitcasa\n")
+    log.debug("Initializing Bitcasa")
     b = BitcasaDownload(args.depth, args.temp, args.src, args.dst, rec, args.local, args.token, args.threads)
     b.process()
-    logger("done\n")
+    log.info("done")
 
-_log = ""
+
 if __name__ == "__main__":
     main(sys.argv[1:])

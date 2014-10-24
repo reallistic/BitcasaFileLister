@@ -4,10 +4,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Bitcasa File lister</title>
         <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-        <link rel="stylesheet" href="../css/bootstrap.min.css" media="screen">
+        <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
         <style type="text/css">
-            /* Sticky footer styles
-            -------------------------------------------------- */
             #footer {
               position: fixed;
               bottom: 0;
@@ -49,8 +47,8 @@
               <ul class="nav navbar-nav">
                 <li><a href="/bitcasafilelist/">Home</a></li>
                 <li><a href="https://github.com/rxsegrxup/BitcasaFileLister/">GitHub</a></li>
-                <li><a href="/donate/">Donate</a></li>
-                <li><a href="/about/">About</a></li>
+                <li><a href="/#donate" target="_blank">Donate</a></li>
+                <li><a href="/#about" target="_blank">About</a></li>
               </ul>
             </div><!-- /.navbar-collapse -->
           </div><!-- /.container-fluid -->
@@ -63,13 +61,13 @@
             <h1>Bitcasa Access Token and Files</h1>
 
             <?php
-            include_once("BitcasaClient.php");
-            include_once("config.php");
-            include_once("BitcasaUtils.php");
+            include_once("./bitcasa-sdk-php/BitcasaClient.php");
+            include_once("./bitcasa-sdk-php/config.php");
+            include_once("./bitcasa-sdk-php/BitcasaUtils.php");
 
             $at=$_GET["access_token"];
-            $urlprefix=($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . //($_SERVER["REQUEST_URI"]) . 
-                    "/bitcasafilelist/bitcasa-sdk-php/example.php?access_token=$at&root=";
+            $urlprefix=($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . 
+                    "/bitcasafilelist/files.php?access_token=$at&root=";
 
             $urlprefix2="https://developer.api.bitcasa.com/v1/files/";
             if(isset($_GET['root'])){
@@ -100,14 +98,10 @@
             else{
                 $dpth = 1;
             }
-            //$files = json_decode(basicCurlGet("https://developer.api.bitcasa.com/v1/folders/?access_token=$at&depth=$dpth"));
-            //
-            //print_r($files);
-            //echo "</pre>";
 
             $client = new BitcasaClient();
             $client->setAccessTokenFromRequest();
-
+            $error=false;
             try {
                 $items = $client->getFolderFromPath($root);
                 
@@ -142,7 +136,6 @@
                             echo "<a href='".$urlprefix.$item->getPath()."' >" . $item->getName() ."</a>";
                         }
                         else{
-                            //echo $item->getName();
                             echo "<a href='".$urlprefix2.$item->getName()."?access_token=$at&path=".$item->getPath()."' >" . $item->getName() ."</a>";
                         }
                         echo "</td><td>" . $item->getPath() . "</td>"

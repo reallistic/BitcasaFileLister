@@ -25,8 +25,8 @@
 		      <ul class="nav navbar-nav">
 		        <li class="active"><a href="/">Home</a></li>
 		        <li><a href="https://github.com/rxsegrxup/BitcasaFileLister/">GitHub</a></li>
-		        <li><a href="/donate/">Donate</a></li>
-		        <li><a href="/about/">About</a></li>
+		        <li><a href="/#donate" target="_blank">Donate</a></li>
+                <li><a href="/#about" target="_blank">About</a></li>
 		      </ul>
 		    </div><!-- /.navbar-collapse -->
 		  </div><!-- /.container-fluid -->
