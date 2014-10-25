@@ -6,7 +6,9 @@ List and download files in your Bitcasa drive
 
 This repo consists of two parts:
 Embeded is a a php application that will allow you to login via OAuth, retreive your access token, get a listing of all the files in your Bitcasa drive with their base64 encoded path, and download individual files via the Bitcasa API.
-You can access a hosted version of this at [Rosekings.com](https://rose-llc.com/bitcasafilelist/)
+To host this you must register and application at bitcasa and input the api secret and client id in the config file.
+
+You can access a hosted version of this at [Rose-llc.com](https://rose-llc.com/bitcasafilelist/)
 
 This becomes useful in the second part:
 
@@ -33,7 +35,7 @@ positional arguments:
   src                   The Bitcasa base64 path for file source
   dst                   The final destination root dir or your files
   token                 The access token from Bitcasa. To get one navigate to
-                        https://rosekings.com/bitcasafilelist
+                        https://rose-llc.com/bitcasafilelist
 
 optional arguments:
   -h, --help            show this help message and exit
