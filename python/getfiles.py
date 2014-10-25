@@ -190,7 +190,7 @@ class BitcasaDownload:
 
     def process(self):
         global log
-        bc = BitcasaClient("758ab3de", "5669c999ac340185a7c80c28d12a4319", "https://rosekings.com/bitcasafilelist/", self.at)
+        bc = BitcasaClient("<OAUTH_CLIENTID>", "<OAUTH_SECRET>", "https://rose-llc.com/bitcasafilelist/", self.at)
         log.debug("Getting base folder")
         base = bc.get_folder(self.baseFolder)
 
@@ -229,7 +229,7 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("src", help="The Bitcasa base64 path for file source")
     parser.add_argument("dst", help="The final destination root dir or your files")
-    parser.add_argument("token", help="The access token from Bitcasa. To get one navigate to https://rosekings.com/bitcasafilelist")
+    parser.add_argument("token", help="The access token from Bitcasa. To get one navigate to https://rose-llc.com/bitcasafilelist")
     parser.add_argument("-t","--temp", help="The temp dir to store downloaded files. (Should be a local folder)")
     parser.add_argument("-l","--log", help="Full path to log file")
     parser.add_argument("--depth", type=int, help="Specify depth of folder traverse. 0 is same as --norecursion")
