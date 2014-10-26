@@ -27,18 +27,20 @@ This script is particularly useful for:
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
 
 #Install
+```
+git clone https://github.com/rxsegrxup/BitcasaFileLister.git
+cd BitcasaFileLister/python
+```
+This script requires the `requests` python module which can be installed via the following command:
+
+```
+pip install requests
+```
 Check the [wiki](https://github.com/rxsegrxup/BitcasaFileLister/wiki/) for install guides.
 
 To install on windows [click here](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Windows-install-instructions)
 
 #Usage
-```
-git clone https://github.com/rxsegrxup/BitcasaFileLister.git
-cd BitcasaFileLister/python
-```
-* Requires wget, requests
-* pip install wget
-* pip install requests
 ```
 getfiles.py [-h] [-t TEMP] [-l LOG] [--depth DEPTH] [-m THREADS]
                    [--local] [--norecursion] [--verbose]
@@ -122,3 +124,4 @@ As soon as a file is copied from temp to destination, it is deleted thus minimiz
 * Upload directly to cloud providers (google drive, opendrive, copy)
 * Copying lists of files instead of entire directories
 * Python Web Application instead of command line
+* Retry failed downloads
