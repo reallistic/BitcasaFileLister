@@ -25,6 +25,12 @@ This script is particularly useful for:
 
 
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
+
+#Install
+Check the [wiki](https://github.com/rxsegrxup/BitcasaFileLister/wiki/) for install guides.
+
+To install on windows [click here](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Windows-install-instructions)
+
 #Usage
 ```
 git clone https://github.com/rxsegrxup/BitcasaFileLister.git
