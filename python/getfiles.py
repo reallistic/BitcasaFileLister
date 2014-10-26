@@ -108,6 +108,8 @@ class BitcasaDownload:
         global log
 
         log.info("Thread [%s]: %s" % (tthdnum,path))
+        if os.path.isabs(path):
+            path = path[1:]  # remove / to make path joinable
         fulldest = os.path.join(self.dest, path)
         fulltmp = os.path.join(self.tmp, path)
         log.debug("Dest path %s" % fulldest)
@@ -238,7 +240,7 @@ def main(argv):
     parser.add_argument("--norecursion", help="Do not go below the src folder. (Same as --depth=0)", action="store_true")
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
     args = parser.parse_args()
-   
+
 
     _log = ""
     if (args.log == None or args.log == "") and not args.local:
