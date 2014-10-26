@@ -190,7 +190,7 @@ class BitcasaDownload:
 
     def process(self):
         global log
-        bc = BitcasaClient("<OAUTH_CLIENTID>", "<OAUTH_SECRET>", "https://rose-llc.com/bitcasafilelist/", self.at)
+        bc = BitcasaClient("758ab3de", "5669c999ac340185a7c80c28d12a4319","https://rose-llc.com/bitcasafilelist/", self.at)
         log.debug("Getting base folder")
         base = bc.get_folder(self.baseFolder)
 
