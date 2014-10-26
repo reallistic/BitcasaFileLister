@@ -155,11 +155,10 @@ class BitcasaDownload:
                         myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                         myFile.close()
 
-                except Exception, e:
-                    log.error("Thread [%s]: Error processing file %s\n%s" % (tthdnum,nm,e.strerror))
-                    myFile = file("%serrorfiles.txt" % self.tmp, 'a')
-                    myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
-                    myFile.close()
+                except Exception as e:
+                    log.error("Thread [%s]: Error processing file %s\n%s" % (tthdnum, nm, e.strerror))
+                    with open(os.path.join(self.tmp, 'errorfiles.txt'), 'a') as myFile:
+                        myFile.write("%s%s %s\r\n" % (fulldest, nm, pt))
             #Randomly log progress and speed statistics
             log.info("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
     def __init__(self, depth, tmp, src, dst, rec, local, at, mt):
