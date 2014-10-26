@@ -52,20 +52,28 @@ class BitcasaDownload:
             try:
                 if not os.path.isdir(fulltmp):
                     os.makedirs(fulltmp)
-            except OSError as exc:
-                pass
+            except:
+                log.error("Thread [%s]: error creating dirs for file %s via wget" % (tthdnum, item.name))
+                raise
             if not self.prt.local:
                 try:
                     if not os.path.isdir(fulldest):
                         os.makedirs(fulldest)
-                except OSError as exc:
-                    pass
+                except:
+                    log.error("Thread [%s]: error creating dirs for file %s via wget" % (tthdnum, item.name))
+                    raise
+                    
             try:
                 destpath = os.path.join(fulldest,item.name)
                 tmppath = os.path.join(fulltmp,item.name)
                 log.debug("Thread [%s]: %s" % (tthdnum, apidownloaduri))
                 log.debug("Thread [%s]: Downloading file to %s" % (tthdnum, tmppath))
-                wget.download(apidownloaduri,out=tmppath)
+                try:
+                    wget.download(apidownloaduri,out=tmppath)
+                except:
+                    log.error("Thread [%s]: error downloading %s via wget" % (tthdnum, item.name))
+                    raise
+
                 log.debug("Thread [%s]: Download finished." % tthdnum)
                 if not self.prt.end:
                     self.prt.bytestotal+=szb
