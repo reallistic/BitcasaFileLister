@@ -59,19 +59,19 @@ optional arguments:
 ```
 ##Run examples:
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ --local
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c --local
 ```
 * Simple execution
 * All logging will be sent to /mnt/networkdrive/c/documents/runlog.txt by default
 * Files will be downloaded directly to destination
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
 ```
 * Run in background
 * Direct stdout and stderr to runlog.txt
 * All logging will be sent to /mnt/tmp/documents/runlog.txt by default
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt > /var/log/bitcasafilelist/runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt > /var/log/bitcasafilelist/runlog.txt 2>&1 &
 ```
 * Run in background
 * Direct stdout and stderr to /var/log/bitcasafilelist/runlog.txt
