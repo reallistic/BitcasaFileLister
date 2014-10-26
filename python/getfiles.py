@@ -52,14 +52,14 @@ class BitcasaDownload:
                 if not os.path.exists(fulltmp):
                     os.makedirs(fulltmp)
             except:
-                log.warn("Thread [%s]: error creating dirs for file %s. Trying download anyway" % (tthdnum, fulltmp))
+                log.warn("Thread [%s]: Creating dirs for file %s failed. Trying download anyway" % (tthdnum, fulltmp))
 
             if not self.prt.local:
                 try:
                     if not os.path.exists(fulldest):
                         os.makedirs(fulldest)
                 except:
-                    log.warn("Thread [%s]: error creating dirs for file %s. Trying download anyway" % (tthdnum, fulldest))
+                    log.warn("Thread [%s]: Creating dirs for file %s failed. Trying download anyway" % (tthdnum, fulldest))
                     
             try:
                 destpath = os.path.join(fulldest, item.name)
