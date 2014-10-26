@@ -124,7 +124,7 @@ class BitcasaDownload:
                 try:
                     nm = item.name
                     pt = item.path
-                    tfd = str("%s%s" % (fulldest,item.name))
+                    tfd = os.path.join(fulldest, item.name)
                     fexists = os.path.isfile(tfd) and os.path.getsize(tfd) >= item.size
                     cnti+=1
                     if isinstance(item, BitcasaFile) and not fexists:
