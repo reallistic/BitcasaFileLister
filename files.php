@@ -124,7 +124,7 @@
             if(!$error){
                 echo "<table class='table'>";
                 ?>
-                <tr><th style="min-width:130px;">Name</th><th>UUID Path</th><th class="hideSmallScreen">Sync Type</th></tr>
+                <tr><th style="min-width:130px;">Name</th><th>Base64 Path</th><th class="hideSmallScreen">Sync Type</th></tr>
                 <?php
                 echo "<tr><td>";
                         echo "<a href='".$urlprefix.$parent."' >Up</a>";
