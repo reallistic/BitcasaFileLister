@@ -108,6 +108,8 @@ class BitcasaDownload:
         global log
 
         log.info("Thread [%s]: %s" % (tthdnum,path))
+        if os.path.isabs(path):
+            path = path[1:]  # remove / to make path joinable
         fulldest = os.path.join(self.dest, path)
         fulltmp = os.path.join(self.tmp, path)
         log.debug("Dest path %s" % fulldest)
@@ -122,7 +124,7 @@ class BitcasaDownload:
                 try:
                     nm = item.name
                     pt = item.path
-                    tfd = str("%s%s" % (fulldest,item.name))
+                    tfd = os.path.join(fulldest, item.name)
                     fexists = os.path.isfile(tfd) and os.path.getsize(tfd) >= item.size
                     cnti+=1
                     if isinstance(item, BitcasaFile) and not fexists:
@@ -153,11 +155,10 @@ class BitcasaDownload:
                         myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
                         myFile.close()
 
-                except Exception, e:
-                    log.error("Thread [%s]: Error processing file %s\n%s" % (tthdnum,nm,e.strerror))
-                    myFile = file("%serrorfiles.txt" % self.tmp, 'a')
-                    myFile.write("%s%s %s\r\n" % (fulldest,nm,pt))
-                    myFile.close()
+                except Exception as e:
+                    log.error("Thread [%s]: Error processing file %s\n%s" % (tthdnum, nm, e.strerror))
+                    with open(os.path.join(self.tmp, 'errorfiles.txt'), 'a') as myFile:
+                        myFile.write("%s%s %s\r\n" % (fulldest, nm, pt))
             #Randomly log progress and speed statistics
             log.info("finished %s %s at %s\n" % (path, convertSize(self.bytestotal),getSpeed(self.bytestotal,time.time()-self.st)))
     def __init__(self, depth, tmp, src, dst, rec, local, at, mt):
@@ -238,7 +239,7 @@ def main(argv):
     parser.add_argument("--norecursion", help="Do not go below the src folder. (Same as --depth=0)", action="store_true")
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
     args = parser.parse_args()
-   
+
 
     _log = ""
     if (args.log == None or args.log == "") and not args.local:
