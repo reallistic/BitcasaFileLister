@@ -27,6 +27,13 @@ This script is particularly useful for:
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
 #Usage
 ```
+git clone https://github.com/rxsegrxup/BitcasaFileLister.git
+cd BitcasaFileLister/python
+```
+* Requires wget, requests
+* pip install wget
+* pip install requests
+```
 getfiles.py [-h] [-t TEMP] [-l LOG] [--depth DEPTH] [-m THREADS]
                    [--local] [--norecursion] [--verbose]
                    src dst token
@@ -52,13 +59,19 @@ optional arguments:
 ```
 ##Run examples:
 ```
-python2.7 getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ --local
+```
+* Simple execution
+* All logging will be sent to /mnt/networkdrive/c/documents/runlog.txt by default
+* Files will be downloaded directly to destination
+```
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
 ```
 * Run in background
 * Direct stdout and stderr to runlog.txt
 * All logging will be sent to /mnt/tmp/documents/runlog.txt by default
 ```
-python2.7 getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt > /var/log/bitcasafilelist/runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt > /var/log/bitcasafilelist/runlog.txt 2>&1 &
 ```
 * Run in background
 * Direct stdout and stderr to /var/log/bitcasafilelist/runlog.txt
