@@ -108,8 +108,6 @@ class BitcasaDownload:
         global log
 
         log.info("Thread [%s]: %s" % (tthdnum,path))
-        if os.path.isabs(path):
-            path = path[1:]  # remove / to make path joinable
         fulldest = os.path.join(self.dest, path)
         fulltmp = os.path.join(self.tmp, path)
         log.debug("Dest path %s" % fulldest)
@@ -148,7 +146,7 @@ class BitcasaDownload:
                             break
                     elif isinstance(item, BitcasaFolder):
                         if (self.depth == None or self.depth > depth) and self.rec:
-                            self.folderRecurse(item, "%s/%s" % (path,nm), tthdnum, (depth+1))
+                            self.folderRecurse(item, os.path.join(path, nm), tthdnum, (depth+1))
                     elif fexists:
                         log.info("Thread [%s]: %s already exists. Skipping" % (tthdnum,nm))
                         myFile = file("%sskippedfiles.txt" % self.tmp, 'a')
