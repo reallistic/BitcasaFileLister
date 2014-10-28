@@ -47,6 +47,12 @@ class BitcasaDownload:
             st = time.time()
             log.info("Thread [%s]: %s size %s" % (tthdnum, item.name, sz))
             params = {"access_token":self.prt.accesstoken, "path":pt}
+            try:
+                nm = nm.encode('utf-8')
+            except:
+                log.warn("Error encoding to utf-8. WIll try download anyway")
+            else:
+                pass
             apidownloaduri = "%s%s?%s" % (BASE_URL, urllib.quote_plus(nm), urllib.urlencode(params))
             try:
                 if not os.path.exists(fulltmp):
@@ -203,7 +209,21 @@ class BitcasaDownload:
     def process(self):
         bitc = BitcasaClient("758ab3de", "5669c999ac340185a7c80c28d12a4319", "https://rose-llc.com/bitcasafilelist/", self.accesstoken)
         log.debug("Getting base folder")
-        base = bitc.get_folder(self.basefolder)
+        base = None
+        tries = 0
+        while base is None and tries < 5:
+            try:
+                base = bitc.get_folder(self.basefolder)
+            except ValueError:
+                log.debug("Sleeping")
+                time.sleep(10)
+            else:
+                pass
+        if base is None and tries >= 5:
+            log.error("Error could not retreive base folder")
+            return 0;
+        log.debug("Got base folder")
+        log.debug(base.name)
 
         myfile = file(self.successfiles, 'w+')
         myfile.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Start\n")
