@@ -10,6 +10,8 @@ To host this you must register and application at bitcasa and input the api secr
 
 You can access a hosted version of this at [Rose-llc.com](https://rose-llc.com/bitcasafilelist/)
 
+[Adding custom api keys to the getfiles.py](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Adding-custom-api-keys)
+
 This becomes useful in the second part:
 
 #BitcasaFileFetcher
