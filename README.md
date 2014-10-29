@@ -137,4 +137,4 @@ As soon as a file is copied from temp to destination, it is deleted thus minimiz
 * Upload directly to cloud providers (google drive, opendrive, copy)
 * Copying lists of files instead of entire directories
 * Python Web Application instead of command line
-* Retry failed downloads
+* ~~Retry failed downloads~~
