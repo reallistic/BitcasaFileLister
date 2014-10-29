@@ -102,7 +102,7 @@ def get_args():
     args.rec = not args.rec
     args.console = not args.console
 
-    if args.depth > 0 and args.norecursion:
+    if args.depth > 0 and not args.rec:
         sys.stdout.write("Note: Non 0 depth and --no-recursion parameter present. Assuming recusion")
         args.rec = True
     return args
