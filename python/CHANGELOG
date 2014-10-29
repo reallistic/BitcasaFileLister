@@ -1,4 +1,4 @@
-Version 0.5.0
+##Version 0.5.0
 
 * Retries to download files and perform other api interactions 3 times
 * Properly checks exceptions instead of using general cases
@@ -14,5 +14,12 @@ Version 0.5.0
 * Added --noconsole param to prevent console logging
 * Added versioning
 
-Version 0.5.1
+##Version 0.5.1
 * bugfix
+
+##Version 0.5.2
+* Save cpu by first trying download without flush
+* Fix bug where a keyboard interrupt would not stop execution when using a single thread
+* The access token now needs to be generated and stored using getfiles.py --oauth and getfiles.py --settoken
+* Got rid of the local flag
+* Added the --testauth flag to ensure a connection can be made

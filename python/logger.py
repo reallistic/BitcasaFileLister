@@ -11,18 +11,20 @@ if not logfile or logfile == "":
 maxsize = 1 * 1024* 1024 #1mb
     
 LOGLEVEL = logging.INFO
-if args.verbose:
+if args.verbose or args.test:
 	LOGLEVEL = logging.DEBUG
 logger.setLevel(LOGLEVEL)
 
-#file logger
-filehandler = RotatingFileHandler(logfile, maxBytes=maxsize, backupCount=5)
-filehandler.setLevel(LOGLEVEL)
 lFormat = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s]: %(message)s', '%m/%d/%Y %I:%M:%S')
-filehandler.setFormatter(lFormat)
-logger.addHandler(filehandler)
 
-if args.console:
+if not args.test:
+	#file logger
+	filehandler = RotatingFileHandler(logfile, maxBytes=maxsize, backupCount=5)
+	filehandler.setLevel(LOGLEVEL)
+	filehandler.setFormatter(lFormat)
+	logger.addHandler(filehandler)
+
+if args.console or args.test:
     #Console logger
     consolehandler = logging.StreamHandler()
     consolehandler.setLevel(LOGLEVEL)

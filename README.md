@@ -1,11 +1,12 @@
 BitcasaFileLister
 =================
-Version 0.5.1
+Version 0.5.2
 
 List and download files in your Bitcasa drive 
 
 The BitcasaFileLister is a a php application that will allow you to login via OAuth, retrieve your access token, get a listing of all the files in your Bitcasa drive with their base64 encoded path, and download individual files via the Bitcasa API.
-To host this you must register and application at bitcasa and input the api secret and client id in the [config file](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/bitcasa-sdk-php/config.php) and change them in [utils.py](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/python/utils.py#L4-L5).
+To host this you must register and application at bitcasa and input the api secret and client id in the [config file](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/bitcasa-sdk-php/config.php).
+ and change them in [utils.py](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/python/utils.py#L4-L5).
 
 You can access a hosted version of this at [Rose-llc.com](https://rose-llc.com/bitcasafilelist/)
 
@@ -24,16 +25,17 @@ This script is particularly useful for:
 
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
 
-You can also run the FileFetcher using your own client id and secret by following these directions:
+It is **recommended** that you run the FileFetcher using your own client id and secret by following these directions:
 [Adding custom api keys to the utils.py](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Adding-custom-api-keys)
 
-##NOTE. When I attempted to use a new CLIENTID and CLIENTSECRET I received the following Bitcasa error:
-```
-BitcasaException: Client ID not recognized.
-```
-I will be starting a thread in the Bitcasa forums asking about this and will post a link to it when it is created
-
 #Install
+
+Check the [wiki](https://github.com/rxsegrxup/BitcasaFileLister/wiki/) for more guides and instructions.
+
+To install on windows [click here](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Windows-install-instructions)
+
+General instructions below
+
 ```
 git clone https://github.com/rxsegrxup/BitcasaFileLister.git
 cd BitcasaFileLister/python
@@ -43,25 +45,46 @@ This script requires the `requests` python module which can be installed via the
 ```
 pip install requests
 ```
-Check the [wiki](https://github.com/rxsegrxup/BitcasaFileLister/wiki/) for install guides.
 
-To install on windows [click here](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Windows-install-instructions)
+Before first run
+```
+python getfiles.py --oauth
+#Output will be an oauth url to retrieve the access token
+```
+
+Store access token
+
+```
+python getfiles.py --settoken <token from oauth>
+```
+
+Test authentication
+
+```
+python getfiles.py / / --testauth
+```
+
+Download your first files
+
+```
+python getfiles.py <base64 src directory> <destination directory>
+```
 
 #Usage
 ```
-getfiles.py [-h] [-t TEMP] [-l LOG] [--depth DEPTH] [-m THREADS]
-                   [--local] [--norecursion] [--noconsole] [--oauth]
-                   [--verbose] [--version]
-                   src dst token
+getfiles.py [-h] [--settoken TOKEN] [-t TEMP] [-l LOG]
+                   [--depth DEPTH] [-m THREADS] [--norecursion] [--noconsole]
+                   [--oauth] [--verbose] [--testauth] [--version]
+                   src dst
 
 positional arguments:
   src                   The Bitcasa base64 path for file source
   dst                   The final destination root dir or your files
-  token                 The access token from Bitcasa. To get one navigate to
-                        https://rose-llc.com/bitcasafilelist
 
 optional arguments:
   -h, --help            show this help message and exit
+  --settoken TOKEN   Set the access token from Bitcasa. You only need to do
+                        this once.
   -t TEMP, --temp TEMP  The temp dir to store downloaded files. (Should be a
                         local folder)
   -l LOG, --log LOG     Full path to log file
@@ -70,28 +93,29 @@ optional arguments:
   -m THREADS, --threads THREADS
                         Specify the max number of threads to use for
                         downloading. Default is 5
-  --local               Only store file locally. Do not use temp dir
   --norecursion         Do not go below the src folder. (Same as --depth=0)
   --noconsole           do not log to console
-  --oauth               do not log to console
+  --oauth               Get the url to authenticate and retrieve an access
+                        token
   --verbose             increase output verbosity
+  --testauth            test capability to connect to infinite drive
   --version             Displays version and exits
 ```
 ##Run examples:
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c --local
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/
 ```
 * Simple execution
-* All logging will be sent to /mnt/networkdrive/c/documents/runlog.txt by default
+* All logging will be sent to /mnt/networkdrive/c/documents/runlog.txt (this is the default)
 * Files will be downloaded directly to destination
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >runlog.txt 2>&1 &
 ```
 * Run in background
 * Direct stdout and stderr to runlog.txt
-* All logging will be sent to /mnt/tmp/documents/runlog.txt by default
+* All logging will be sent to /mnt/tmp/documents/runlog.txt (this is the default)
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt --noconsole > /var/log/bitcasafilelist/runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt --noconsole > /var/log/bitcasafilelist/runlog.txt 2>&1 &
 ```
 * Run in background
 * No console logging

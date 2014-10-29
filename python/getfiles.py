@@ -9,13 +9,12 @@ class BitcasaDownload:
     def folderRecurse(self, fold, path, tthdnum, depth):
         log.info("Thread [%s]: %s" % (tthdnum, path))
         fulldest = os.path.join(self.dest, path)
-        fulltmp = os.path.join(self.tmp, path)
-        log.debug("Dest path %s" % fulldest)
-        log.debug("Tmp path %s" % fulltmp)
+        fulltmp = ""
         remainingtries = 3
          #Create temp dir and dest dir if needed
         try:
-            if fulltmp:
+            if self.tmp:
+                fulltmp = os.path.join(self.tmp, path)
                 try:
                     os.makedirs(fulltmp)
                 except OSError:
@@ -23,7 +22,7 @@ class BitcasaDownload:
                         self.writeErrorDir(tthdnum, fold.name, fulltmp, fold.path, traceback.format_exc())
                         raise
 
-            if not self.local and fulldest:
+            if fulldest:
                 try:
                     os.makedirs(fulldest)
                 except OSError:
@@ -33,8 +32,12 @@ class BitcasaDownload:
         except OSError:
             return
         except BitcasaException: #This could happen if the api is called when asking for folder properties
-            self.writeErrorDir(tthdnum, path, fulltmp, "", traceback.format_exc())
+            self.writeErrorDir(tthdnum, path, fulldest, "", traceback.format_exc())
             return
+
+        log.debug("Dest path %s" % fulldest)
+        if self.tmp:
+            log.debug("Tmp path %s" % fulltmp)
 
         while remainingtries > 0:
             try:
@@ -96,21 +99,21 @@ class BitcasaDownload:
                 remainingtries = 0
 
     def __init__(self, args):
-        log.debug("depth: %s" % args.depth)
-        log.debug("tmp: %s" % args.temp)
         log.debug("src: %s" % args.src)
         log.debug("dst: %s" % args.dst)
-        log.debug("rec: %s" % args.rec)
-        log.debug("local: %s" % args.local)
         log.debug("at: %s" % args.token)
+        log.debug("tmp: %s" % args.temp)
+        log.debug("logdir: %s" % args.logdir)
+        log.debug("rec: %s" % args.rec)
+        log.debug("depth: %s" % args.depth)
         log.debug("mt: %s" % args.threads)
         #destination directory
         self.dest = args.dst
         #temp directory
         self.tmp = args.temp
-        self.successfiles = os.path.join(args.temp, "successfiles.txt")
-        self.errorfiles = os.path.join(args.temp, "errorfiles.txt")
-        self.skippedfiles = os.path.join(args.temp, "skippedfiles.txt")
+        self.successfiles = os.path.join(args.logdir, "successfiles.txt")
+        self.errorfiles = os.path.join(args.logdir, "errorfiles.txt")
+        self.skippedfiles = os.path.join(args.logdir, "skippedfiles.txt")
         #bittcasa base64 encdoded path
         self.basefolder = args.src
         #Access token
@@ -119,9 +122,16 @@ class BitcasaDownload:
         if self.maxthreads == None or self.maxthreads == 0:
             log.info("Using default max threads value of 5")
             self.maxthreads = 5
-        self.local = args.local
+        #Recursion
         self.rec = args.rec
+        #Recursion max depth
         self.depth = args.depth
+        #Test only
+        self.test = args.test
+        #Log dir
+        self.logdir = args.logdir
+
+        #Initialize
         self.numthreads = 0
         self.end = False
         self.threads = []
@@ -133,11 +143,13 @@ class BitcasaDownload:
         log.debug("Getting base folder")
         base = None
         remainingtries = 3
+        if self.test:
+            remainingtries = 1
         while base is None and remainingtries > 0:
             try:
                 base = bitc.get_folder(self.basefolder)
-            except BitcasaException as e:
-                log.debug("Couldn't get base folder. Assuming rate limit exceeded. Sleeping")
+            except (BitcasaException, ValueError) as e:
+                log.debug("Couldn't get base folder. Will retry %s more times", remainingtries)
                 log.debug(e)
                 remainingtries -= 1
                 if remainingtries > 0:
@@ -145,13 +157,14 @@ class BitcasaDownload:
                         time.sleep(10)
                     except KeyboardInterrupt:
                         log.info("Got exit signal. Goodbye")
-                        sys.exit(2)
+                        return
                 else:
                     log.error("Error could not retreive base folder")
                     return
         log.debug("Got base folder")
-        log.debug(base.name)
-
+        if self.test:
+            log.info("Nothing downloaded because this is a test")
+            return
         myfile = file(self.successfiles, 'w+')
         myfile.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Start\n")
         myfile.close()
@@ -164,10 +177,15 @@ class BitcasaDownload:
 
         log.debug("Starting recursion")
         self.folderRecurse(base, "", 0, 0)
-
-        #wait for threads to finish downoading
-        for thread in self.threads:
-            thread.join()
+        try:
+            while self.numthreads >= 0 and not self.end:
+                time.sleep(5)
+            #wait for threads to finish downoading
+            for thread in self.threads:
+                thread.join()
+        except KeyboardInterrupt:
+            self.end = True
+            log.info("Thread [0]: Program received exit signal")
         #Log final speed and statistics
         log.info("finished %s at %s\n" % (utils.convert_size(self.bytestotal), utils.get_speed(self.bytestotal, time.time() - self.st)))
 
@@ -207,14 +225,10 @@ class BitcasaDownload:
             self.end = True
 def main():
     args = utils.get_args()
-
-    if args.depth > 0 and args.norecursion:
-        log.info("Note: Non 0 depth and --no-recursion parameter present. Assuming recusion")
-        args.rec = True
     log.debug("Initializing Bitcasa")
     bitc = BitcasaDownload(args)
     bitc.process()
-    log.info("done")
+    log.info("Done")
 
 
 if __name__ == "__main__":
