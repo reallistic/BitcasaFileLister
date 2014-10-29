@@ -4,6 +4,7 @@ from bitcasa import BitcasaClient
 CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
 
+
 def convert_size(size):
     if size <= 0:
         return '0B'
@@ -41,7 +42,7 @@ def get_args():
     parser.add_argument("--noconsole", help="do not log to console", action="store_true")
     parser.add_argument("--oauth", help="do not log to console", action="store_true")
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
-    parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.0')
+    parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.1')
     args = parser.parse_args()
 
     if (args.log == None or args.log == "") and not args.local:

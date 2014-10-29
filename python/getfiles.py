@@ -141,7 +141,11 @@ class BitcasaDownload:
                 log.debug(e)
                 remainingtries -= 1
                 if remainingtries > 0:
-                    time.sleep(10)
+                    try:
+                        time.sleep(10)
+                    except KeyboardInterrupt:
+                        log.info("Got exit signal. Goodbye")
+                        sys.exit(2)
                 else:
                     log.error("Error could not retreive base folder")
                     return
