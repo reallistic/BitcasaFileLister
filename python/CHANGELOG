@@ -1,0 +1,15 @@
+Version 0.5.0
+
+* Retries to download files and perform other api interactions 3 times
+* Properly checks exceptions instead of using general cases
+* Immidiately stops download and/or copy when receiving a end signal
+* Handles keyboard interupts properly
+* Reduces memory usage during download by performing os.fsync
+* Manually copy the file in chunks in order to stop network copies which may stall during interupt
+* Reorganize files
+* Added oauth generator
+* Fix issues that would cause a custom web app implementation to improperly redirect
+* In web app, use the python generated oauth when present
+* In web app, show warning when not using python oauth token
+* Added --noconsole param to prevent console logging
+* Added versioning

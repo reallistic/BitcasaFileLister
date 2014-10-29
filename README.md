@@ -1,21 +1,17 @@
 BitcasaFileLister
 =================
-##NOTE. This application is now stable for use
+Version 0.5.0
 
 List and download files in your Bitcasa drive 
 
-This repo consists of two parts:
-Embeded is a a php application that will allow you to login via OAuth, retreive your access token, get a listing of all the files in your Bitcasa drive with their base64 encoded path, and download individual files via the Bitcasa API.
-To host this you must register and application at bitcasa and input the api secret and client id in the [config file](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/bitcasa-sdk-php/config.php) and change them in [getfiles.py](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/python/getfiles.py#L204).
+The BitcasaFileLister is a a php application that will allow you to login via OAuth, retrieve your access token, get a listing of all the files in your Bitcasa drive with their base64 encoded path, and download individual files via the Bitcasa API.
+To host this you must register and application at bitcasa and input the api secret and client id in the [config file](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/bitcasa-sdk-php/config.php) and change them in [utils.py](https://github.com/rxsegrxup/BitcasaFileLister/blob/master/python/utils.py#L4-L5).
 
 You can access a hosted version of this at [Rose-llc.com](https://rose-llc.com/bitcasafilelist/)
 
-[Adding custom api keys to the getfiles.py](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Adding-custom-api-keys)
-
-This becomes useful in the second part:
+The BitcasaFileLister is mainly useful to retrieve the base64 encoded paths for use with the BitcasaFileFetcher below.
 
 #BitcasaFileFetcher
-
 
 The filefetcher is a very small command line python application that will recursively fetch files from bitcasa via the API and save them to a designated path. This application is multithreaded to allow multiple downloads at the same time.
 The filefetcher must be manually configured to have your access token, starting location (bitcasa base64 encoded path), target, and temp location.
@@ -27,6 +23,15 @@ This script is particularly useful for:
 
 
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
+
+You can also run the FileFetcher using your own client id and secret by following these directions:
+[Adding custom api keys to the utils.py](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Adding-custom-api-keys)
+
+##NOTE. When I attempted to use a new CLIENTID and CLIENTSECRET I received the following Bitcasa error:
+```
+BitcasaException: Client ID not recognized.
+```
+I will be starting a thread in the Bitcasa forums asking about this and will post a link to it when it is created
 
 #Install
 ```
@@ -45,7 +50,8 @@ To install on windows [click here](https://github.com/rxsegrxup/BitcasaFileListe
 #Usage
 ```
 getfiles.py [-h] [-t TEMP] [-l LOG] [--depth DEPTH] [-m THREADS]
-                   [--local] [--norecursion] [--verbose]
+                   [--local] [--norecursion] [--noconsole] [--oauth]
+                   [--verbose] [--version]
                    src dst token
 
 positional arguments:
@@ -63,9 +69,13 @@ optional arguments:
                         --norecursion
   -m THREADS, --threads THREADS
                         Specify the max number of threads to use for
-                        downloading. default is 5
+                        downloading. Default is 5
   --local               Only store file locally. Do not use temp dir
   --norecursion         Do not go below the src folder. (Same as --depth=0)
+  --noconsole           do not log to console
+  --oauth               do not log to console
+  --verbose             increase output verbosity
+  --version             Displays version and exits
 ```
 ##Run examples:
 ```
@@ -81,9 +91,10 @@ python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0
 * Direct stdout and stderr to runlog.txt
 * All logging will be sent to /mnt/tmp/documents/runlog.txt by default
 ```
-python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt > /var/log/bitcasafilelist/runlog.txt 2>&1 &
+python getfiles.py /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ US1_c0ed54d8aejsgrbd9c -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/runlog.txt --noconsole > /var/log/bitcasafilelist/runlog.txt 2>&1 &
 ```
 * Run in background
+* No console logging
 * Direct stdout and stderr to /var/log/bitcasafilelist/runlog.txt
 * All logging will be sent to /var/log/bitcasafilelist/runlog.txt
 

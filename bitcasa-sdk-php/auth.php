@@ -7,8 +7,8 @@ $secret = OAUTH_SECRET;
 
 if (!isset($_GET['authorization_code']))
 {
-	header("Location: .");
-	die("Authorization code not found");
+	header("Location: ../?error=true");
+	exit;
 }
 
 $client = new BitcasaClient();
@@ -19,11 +19,11 @@ try {
 	}
 }
 catch (Exception $ex) {
-	var_dump($ex);
-	die($ex->getMessage());
+	header("Location: ../?error=true");
+	exit;
 }
-
-header('Location: /bitcasafilelist/files.php?access_token=' . $client->getAccessToken() ,true, 302);
+$at = isset($_GET["at"]) ? "&at=" . $_GET["at"] : "";
+header('Location: ../files.php?access_token=' . $client->getAccessToken() . $at ,true, 302);
 exit;
 
 ?>

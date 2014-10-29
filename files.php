@@ -66,8 +66,15 @@
             include_once("./bitcasa-sdk-php/BitcasaUtils.php");
 
             $at=$_GET["access_token"];
-            $urlprefix=($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . 
-                    "/bitcasafilelist/files.php?access_token=$at&root=";
+            $newat=$_GET["at"];
+            $uri = explode('?', $_SERVER['REQUEST_URI'], 2);
+            $uri = $uri[0];
+            $base = basename($_SERVER['PHP_SELF']);
+            if( ($pos = stripos($uri, $base)) === (strlen($uri) - strlen($base)) ){
+                $uri = substr($uri, 0, $pos);
+            }
+            $urlprefix=($_SERVER["SERVER_PORT"] == 80 ? "http://" : "https://" ) . $_SERVER["SERVER_NAME"] . $uri .
+                    "files.php?access_token=$at&root=";
 
             $urlprefix2="https://developer.api.bitcasa.com/v1/files/";
             if(isset($_GET['root'])){
@@ -83,14 +90,33 @@
                 $root ="/";
                 $parent ="/";
             }
+            if( isset($_GET["at"]) ){
             ?>
-            <div class="panel panel-default">
-                <div class="panel-heading">Access Token</div>
-                <div class="panel-body">
-                    <p><?php echo "$at"; ?></p>
+            <div style="margin-left:30px;margin-bottom:20px;">
+                <p>Your access token for the file fetcher is below.</p>
+                <div class="panel panel-default">
+                    <div class="panel-heading">Access Token</div>
+                    <div class="panel-body">
+                        <p><?php echo $newat; ?></p>
+                    </div>
                 </div>
+                <p>Use this access token to run the FileFetcher like so:</p>
+                <code>python getfiles.py src dest <?php echo $newat; ?></code>
             </div>
-            
+            <?php }
+            else { ?>
+                <div style="margin-left:30px;margin-bottom:20px;">
+                    <p>To get an access token for the FileFetcher please run the following command in your console:</p>
+                    <code>python getfiles.py --oauth</code><br>
+                    <p>This will give you a link to authenticate with Bitcasa and return you here with your access token for use with the FileFetcher</p>
+                </div>
+                <div class="panel panel-danger">
+                    <div class="panel-heading">Access Token only for those that have not upgraded to the new FileFetcher</div>
+                    <div class="panel-body">
+                        <p><?php echo $at; ?></p>
+                    </div>
+                </div>
+            <?php } ?>
             <?php
             if(isset($_GET['depth'])){
                 $dpth = $_GET['depth'];
