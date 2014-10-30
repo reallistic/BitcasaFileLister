@@ -7,7 +7,9 @@ from threads import RunThreaded
 
 class BitcasaDownload:
     def folderRecurse(self, fold, path, tthdnum, depth):
-        log.info("Thread [%s]: %s" % (tthdnum, path))
+        if self.end:
+            return
+        log.info(path)
         fulldest = os.path.join(self.dest, path)
         fulltmp = ""
         remainingtries = 3
@@ -35,9 +37,9 @@ class BitcasaDownload:
             self.writeErrorDir(tthdnum, path, fulldest, "", traceback.format_exc())
             return
 
-        log.debug("Dest path %s" % fulldest)
+        log.debug("Dest path %s", fulldest)
         if self.tmp:
-            log.debug("Tmp path %s" % fulltmp)
+            log.debug("Tmp path %s", fulltmp)
 
         while remainingtries > 0:
             try:
@@ -65,48 +67,55 @@ class BitcasaDownload:
                                 thread.start()
                                 self.threads.append(thread)
                             else:
-                                log.debug("Thread [%s]: Got exit signal while sleeping" % tthdnum)
+                                log.debug("Got exit signal. Not creating any more threads")
                         elif not self.end:
                             self.numthreads += 1
                             thread = RunThreaded(item, self.numthreads, fulldest, self, fulltmp)
                             thread.start()
                             self.threads.append(thread)
                         else:
-                            log.debug("Thread [%s]: Got exit signal. Stopping loop" % tthdnum)
+                            log.debug("Got exit signal. Stopping loop")
                             break
-                    elif isinstance(item, BitcasaFolder):
+                    elif not self.end and isinstance(item, BitcasaFolder):
                         if (self.depth == None or self.depth > depth) and self.rec:
                             self.folderRecurse(item, os.path.join(path, nm), tthdnum, (depth+1))
-                    elif fexists:
+                    elif not self.end and fexists:
                         self.writeSkipped(tthdnum, tfd, pt, nm)
+                    elif self.end:
+                        log.debug("Got exit signal. Discontinue recurse")
+                        return
 
-            except BitcasaException:
+            except (BitcasaException, ValueError) as e:
                 remainingtries -= 1
+                log.warn("Possible rate limit issue. Will retry %s more times", remainingtries)
+                log.warn(e)
                 if remainingtries > 0:
                     time.sleep(10)
                 else:
-                    log.error("Thread [%s]: error downloading at folder %s" % (tthdnum, path))
+                    log.error("Error downloading at folder %s", path)
             except KeyboardInterrupt:
                 self.end = True
-                log.info("Thread [%s]: Program received exit signal", tthdnum)
+                log.info("Program received exit signal")
             except: #Hopefully this won't get called
                 self.writeError(tthdnum, nm, tfd, pt, traceback.format_exc())
             else:
                 #Randomly log progress and speed statistics
                 size = utils.convert_size(self.bytestotal)
                 speed = utils.get_speed(self.bytestotal, time.time() - self.st)
-                log.info("finished %s %s at %s\n" % (path, size, speed))
+                if self.progress and self.bytestotal > 0:
+                    log.info("Downloaded %s at %s", size, speed)
                 remainingtries = 0
 
     def __init__(self, args):
-        log.debug("src: %s" % args.src)
-        log.debug("dst: %s" % args.dst)
-        log.debug("at: %s" % args.token)
-        log.debug("tmp: %s" % args.temp)
-        log.debug("logdir: %s" % args.logdir)
-        log.debug("rec: %s" % args.rec)
-        log.debug("depth: %s" % args.depth)
-        log.debug("mt: %s" % args.threads)
+        log.debug("src: %s", args.src)
+        log.debug("dst: %s", args.dst)
+        log.debug("at: %s", args.token)
+        log.debug("tmp: %s", args.temp)
+        log.debug("logdir: %s", args.logdir)
+        log.debug("rec: %s", args.rec)
+        log.debug("depth: %s", args.depth)
+        log.debug("mt: %s", args.threads)
+        log.debug("p: %s", args.progress)
         #destination directory
         self.dest = args.dst
         #temp directory
@@ -130,6 +139,8 @@ class BitcasaDownload:
         self.test = args.test
         #Log dir
         self.logdir = args.logdir
+        #log progress
+        self.progress = args.progress
 
         #Initialize
         self.numthreads = 0
@@ -149,7 +160,7 @@ class BitcasaDownload:
             try:
                 base = bitc.get_folder(self.basefolder)
             except (BitcasaException, ValueError) as e:
-                log.debug("Couldn't get base folder. Will retry %s more times", remainingtries)
+                log.info("Couldn't get base folder. Will retry %s more times", remainingtries)
                 log.debug(e)
                 remainingtries -= 1
                 if remainingtries > 0:
@@ -178,50 +189,53 @@ class BitcasaDownload:
         log.debug("Starting recursion")
         self.folderRecurse(base, "", 0, 0)
         try:
-            while self.numthreads >= 0 and not self.end:
-                time.sleep(5)
             #wait for threads to finish downoading
-            for thread in self.threads:
-                thread.join()
+            while len(self.threads) > 0:
+                thread = self.threads.pop()
+                if thread.isAlive():
+                    thread.join(5)
+
         except KeyboardInterrupt:
             self.end = True
-            log.info("Thread [0]: Program received exit signal")
+            log.info("Program received exit signal")
         #Log final speed and statistics
-        log.info("finished %s at %s\n" % (utils.convert_size(self.bytestotal), utils.get_speed(self.bytestotal, time.time() - self.st)))
+        if self.progress and self.bytestotal > 0:
+            speed = utils.get_speed(self.bytestotal, time.time() - self.st)
+            log.info("Downloaded %s at %s", utils.convert_size(self.bytestotal), speed)
 
-    def writeSuccess(self, thread, file):
+    def writeSuccess(self, thread, filept):
         try:
             with open(self.successfiles, 'a') as myfile:
-                myfile.write("%s\n" % file)
-        except:
-            log.error("Thread [%s]: Error. Could not write to successfiles.txt. Ending" % (thread))
+                myfile.write("%s\n" % filept)
+        except OSError as e:
+            log.error("Error. Could not write to %s. Ending\n%s", self.successfiles, e)
             self.end = True
 
     def writeSkipped(self, tthdnum, tfd, pt, nm):
-        log.info("Thread [%s]: %s already exists. Skipping" % (tthdnum, nm))
+        log.info("%s already exists. Skipping", nm)
         try:
             with open(self.skippedfiles, 'a') as myfile:
                 myfile.write("%s %s\n" % (tfd, pt))
-        except:
-            log.error("Thread [%s]: Error. Could not write to skippedfiles.txt. Ending" % (tthdnum))
+        except OSError as e:
+            log.error("Error. Could not write to %s. Ending\n%s", self.skippedfiles, e)
             self.end = True
 
     def writeError(self, tthdnum, nm, tfd, pt, e):
-        log.error("Thread [%s]: Error processing file %s\n%s" % (tthdnum, nm, e))
+        log.error("Error processing file %s\n%s", nm, e)
         try:
             with open(self.errorfiles, 'a') as myfile:
                 myfile.write("%s %s\n" % (tfd, pt))
-        except:
-            log.error("Thread [%s]: Error. Could not write to errorfiles.txt. Ending" % (tthdnum))
+        except OSError as e:
+            log.error("Error. Could not write to %s. Ending\n%s", self.errorfiles, e)
             self.end = True
 
     def writeErrorDir(self, tthdnum, nm, tfd, pt, e):
-        log.error("Thread [%s]: Error processing folder %s\n%s" % (tthdnum, nm, e))
+        log.error("Error processing folder %s\n%s", nm, e)
         try:
             with open(self.errorfiles, 'a') as myfile:
                 myfile.write("%s %s\n" % (tfd, pt))
-        except:
-            log.error("Thread [%s]: Error. Could not write to errorfiles.txt. Ending" % (tthdnum))
+        except OSError as e:
+            log.error("Error. Could not write to %s. Ending\n%s", self.errorfiles, e)
             self.end = True
 def main():
     args = utils.get_args()

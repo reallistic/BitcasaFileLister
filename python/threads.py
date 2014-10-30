@@ -10,7 +10,8 @@ class SizeMismatchError(Exception):
 
 class RunThreaded(threading.Thread):
     def __init__(self, item, tthdnum, fulldest, prt, fulltmp):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name=tthdnum)
+        #super().__init__(name=tthdnum)
         self.item = item
         self.nm = item.name
         self.pt = item.path
@@ -36,7 +37,7 @@ class RunThreaded(threading.Thread):
         szb = self.szb
         st = time.time()
         sizecopied = 0
-        log.info("Thread [%s]: %s size %s" % (tthdnum, nm, sz))
+        log.info("%s size %s", nm, sz)
         params = {"access_token":self.prt.accesstoken, "path":pt}
         try:
             nm = nm.encode('utf-8')
@@ -45,24 +46,24 @@ class RunThreaded(threading.Thread):
         try:
             apidownloaduri = "%s%s?%s" % (BASE_URL, urllib.quote_plus(nm), urllib.urlencode(params))
         except KeyError:
-            self.cleanUpAfterError("Thread [%s]: Error unsupported characters in filename %s" % (tthdnum, nm), fulltmp)
+            self.cleanUpAfterError("Error unsupported characters in filename %s" % nm, fulltmp)
         except: #This technically should never happen but technically you never know
             self.cleanUpAfterError(traceback.format_exc(), fulltmp)
 
         if not os.path.exists(fulldest) or (self.prt.tmp and not os.path.exists(fulltmp)):
-            self.cleanUpAfterError("Thread [%s]: Missing temp or destination parent directory" % tthdnum, fulltmp)
+            self.cleanUpAfterError("Missing temp or destination parent directory", fulltmp)
         
         destpath = os.path.join(fulldest, nm)
         tmppath = os.path.join(fulltmp, nm)
         self.destpath = destpath
         self.tmppath = tmppath
 
-        log.debug("Thread [%s]: %s" % (tthdnum, apidownloaduri))
-        log.debug("Thread [%s]: Downloading file to %s" % (tthdnum, tmppath))
+        log.debug("Downloading file to %s", tmppath)
         retriesleft = 3
         sizemismatched = False
         while retriesleft > 0:
             sizecopied = 0
+            progress = time.time() + 60
             try:
                 req = requests.get(apidownloaduri, stream=True, timeout=120)
                 with open(tmppath, 'wb') as tmpfile:
@@ -72,49 +73,53 @@ class RunThreaded(threading.Thread):
                             break
                         if chunk: # filter out keep-alive new chunks
                             tmpfile.write(chunk)
+                            if self.prt.progress and progress < time.time():
+                                progress = time.time() + 60
+                                speed = utils.get_speed(sizecopied, (time.time()-st))
+                                log.info("Downloaded %s of %s at %s", utils.convert_size(sizecopied), sz, speed)
                             if sizemismatched:
                                 tmpfile.flush()
                                 os.fsync(tmpfile.fileno())
                 if sizecopied != szb and not self.prt.end:
-                    raise SizeMismatchError("Download size mismatch downloaded %s expected %s" % (sizecopied, szb))
+                    raise SizeMismatchError("Download size mismatch downloaded %s expected %s" % (utils.convert_size(sizecopied), sz))
                 elif self.prt.end:
-                    self.cleanUpAfterError("Thread [%s]: Recieved signaled stop during download" % tthdnum, fulltmp)
+                    self.cleanUpAfterError("Recieved signaled stop during download", fulltmp)
             except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.RequestException):
-                log.debug("Thread [%s]: Network error. Will retry %s more times" % (tthdnum, retriesleft))
+                log.warn("Network error. Will retry %s more times", retriesleft)
                 retriesleft -= 1
                 if retriesleft > 0:
                     time.sleep(10)
                 else:
-                    log.error("Thread [%s]: error downloading %s" % (tthdnum, nm))
+                    log.error("Error downloading %s", nm)
                     self.cleanUpAfterError("Maximum retries reached", fulltmp)
             except SizeMismatchError:
-                log.debug("Thread [%s]: File size mismatch Will retry %s more times" % (tthdnum, retriesleft))
+                log.debug("File size mismatch Will retry %s more times", retriesleft)
                 retriesleft -= 1
                 sizemismatched = True
                 if retriesleft > 0:
                     time.sleep(10)
                 else:
-                    log.error("Thread [%s]: error downloading %s" % (tthdnum, nm))
+                    log.error("Error downloading %s", nm)
                     self.cleanUpAfterError("Maximum retries reached", fulltmp)
-            except OSError:
-                log.error("Thread [%s]: error writing to file %s" % (tthdnum, nm))
+            except OSError as e:
+                log.error("Error writing to file %s\n%s", nm, e)
                 self.cleanUpAfterError(traceback.format_exc(), fulltmp)
             except (requests.exceptions.RequestException, Exception):
-                log.error("Thread [%s]: error downloading %s" % (tthdnum, nm))
+                log.error("Error downloading %s", nm)
                 self.cleanUpAfterError(traceback.format_exc(), fulltmp)
             except SystemExit:
                 raise
             else:
                 retriesleft = 0
 
-        log.debug("Thread [%s]: Download finished." % tthdnum)
         if not self.prt.end:
             self.prt.bytestotal += szb
-            speed = utils.get_speed(szb, (time.time()-st))
-            log.debug("Thread [%s]: %s downloaded at %s" % (tthdnum, sz, speed))
+            if self.prt.progress:
+                speed = utils.get_speed(szb, (time.time()-st))
+                log.info("%s downloaded at %s", sz, speed)
             st = time.time()
             if self.prt.tmp:
-                log.debug("Thread [%s]: %s copying from temp to dest" % (tthdnum, nm))
+                log.info("Copying from temp to dest")
                 try:
                     shutil.copy2(tmppath, destpath)
                     with open(tmppath, "rb") as f:
@@ -125,23 +130,24 @@ class RunThreaded(threading.Thread):
                                 else:
                                     break
                     if self.prt.end:
-                        self.cleanUpAfterError("Thread [%s]: Recieved signaled stop during copy", destpath)
-                except OSError:
-                    self.cleanUpAfterError("Thread [%s]: Could not copy %s to destination" % (tthdnum, nm), destpath)
+                        self.cleanUpAfterError("Recieved signaled stop during copy", destpath)
+                except OSError as e:
+                    self.cleanUpAfterError("Could not copy %s to destination\n%s" % (nm, e), destpath)
                 except SystemExit:
                     raise
                 else:
-                    speed = utils.get_speed(szb, (time.time()-st))
-                    log.debug("Thread [%s]: %s copied at %s" % (tthdnum, sz, speed))
-                    self.prt.writeSuccess(tthdnum, fulldest)
-                    log.info("Thread [%s]: Finished download %s" % (tthdnum, destpath))
-                    self.prt.numthreads -= 1
+                    if self.prt.progress:
+                        speed = utils.get_speed(szb, (time.time()-st))
+                        log.info("%s copied at %s", sz, speed)
                     try:
                         os.remove(tmppath)
-                    except OSError:
-                        log.warn("Failed cleaning up tmp file %s" % tmppath)
+                    except OSError as e:
+                        log.warn("Failed cleaning up tmp file %s\n%s", tmppath, e)
+            self.prt.writeSuccess(tthdnum, destpath)
+            log.info("Finished download %s", destpath)
+            self.prt.numthreads -= 1
         else:
-            log.warn("Thread [%s]: Parent signaled stop")
+            log.warn("Parent signaled stop")
 
 
     def cleanUpAfterError(self, e, path):
@@ -157,17 +163,15 @@ class RunThreaded(threading.Thread):
         try:
             if os.path.exists(destpath):
                 os.remove(destpath)
-        except OSError:
-            log.warn("Thread [%s]: Couldn't clean up file %s" % (tthdnum, destpath))
+        except OSError as ose:
+            log.warn("Couldn't clean up file %s\n%s", destpath, ose)
 
         #cleanup temp file
         try:
             if self.prt.tmp and os.path.exists(tmppath):
                 os.remove(tmppath)
-        except OSError:
-            log.warn("Thread [%s]: Couldn't clean up file %s" % (tthdnum, tmppath))
-        
-        log.error("Thread [%s]: Download failed %s\n%s" % (tthdnum, path, e))
+        except OSError as ose:
+            log.warn("Couldn't clean up file %s\n%s", destpath, ose)
 
         self.prt.numthreads -= 1
         thread.exit()

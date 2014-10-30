@@ -1,7 +1,6 @@
 import math, sys, argparse, os
 from bitcasa import BitcasaClient
 from bitcasa.exception import BitcasaException
-
 CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
 
@@ -65,7 +64,8 @@ def get_args():
     parser.add_argument("--oauth", help="Get the url to authenticate and retrieve an access token", action="store_true")
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("--testauth", dest="test", help="test capability to connect to infinite drive", action="store_true")
-    parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.2')
+    parser.add_argument("-p","--progress", dest="progress", help="Log download progress every 60 secs", action="store_true")
+    parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.3')
     args = parser.parse_args()
 
 

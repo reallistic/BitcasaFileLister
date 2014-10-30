@@ -1,6 +1,6 @@
 BitcasaFileLister
 =================
-Version 0.5.2
+Version 0.5.3
 
 List and download files in your Bitcasa drive 
 
@@ -72,9 +72,9 @@ python getfiles.py <base64 src directory> <destination directory>
 
 #Usage
 ```
-getfiles.py [-h] [--settoken TOKEN] [-t TEMP] [-l LOG]
-                   [--depth DEPTH] [-m THREADS] [--norecursion] [--noconsole]
-                   [--oauth] [--verbose] [--testauth] [--version]
+getfiles.py [-h] [--settoken TOKEN] [-t TEMP] [-l LOG] [--depth DEPTH]
+                   [-m THREADS] [--norecursion] [--noconsole] [--oauth]
+                   [--verbose] [--testauth] [-p] [--version]
                    src dst
 
 positional arguments:
@@ -83,7 +83,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --settoken TOKEN   Set the access token from Bitcasa. You only need to do
+  --settoken TOKEN      Set the access token from Bitcasa. You only need to do
                         this once.
   -t TEMP, --temp TEMP  The temp dir to store downloaded files. (Should be a
                         local folder)
@@ -99,6 +99,7 @@ optional arguments:
                         token
   --verbose             increase output verbosity
   --testauth            test capability to connect to infinite drive
+  -p, --progress        Log download progress every 60 secs
   --version             Displays version and exits
 ```
 ##Run examples:

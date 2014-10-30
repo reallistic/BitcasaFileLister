@@ -15,7 +15,7 @@ if args.verbose or args.test:
 	LOGLEVEL = logging.DEBUG
 logger.setLevel(LOGLEVEL)
 
-lFormat = logging.Formatter('%(asctime)s [%(name)s][%(levelname)s]: %(message)s', '%m/%d/%Y %I:%M:%S')
+lFormat = logging.Formatter('%(asctime)s [%(threadName)s][%(levelname)s]: %(message)s', '%m/%d/%Y %I:%M:%S')
 
 if not args.test:
 	#file logger

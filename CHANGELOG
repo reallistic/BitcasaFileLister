@@ -1,0 +1,31 @@
+## Version 0.5.0
+
+* Retries to download files and perform other api interactions 3 times
+* Properly checks exceptions instead of using general cases
+* Immidiately stops download and/or copy when receiving a end signal
+* Handles keyboard interupts properly
+* Reduces memory usage during download by performing os.fsync
+* Manually copy the file in chunks in order to stop network copies which may stall during interupt
+* Reorganize files
+* Added oauth generator
+* Fix issues that would cause a custom web app implementation to improperly redirect
+* In web app, use the python generated oauth when present
+* In web app, show warning when not using python oauth token
+* Added --noconsole param to prevent console logging
+* Added versioning
+
+## Version 0.5.1
+* bugfix
+
+## Version 0.5.2
+* Save cpu by first trying download without flush
+* Fix bug where a keyboard interrupt would not stop execution when using a single thread
+* The access token now needs to be generated and stored using getfiles.py --oauth and getfiles.py --settoken
+* Got rid of the local flag
+* Added the --testauth flag to ensure a connection can be made
+
+## Version 0.5.3
+* Fix bug causing program to stall and recursion to fail
+* Added -p, --progress flag to occasionally log progress
+* Let the logging module print the thread number
+* Better logging messages
