@@ -57,7 +57,11 @@ class BitcasaClient(object):
             'access_token': self.access_token
         }
         response = requests.get(url, params=params)
-        result = json.loads(response.content)
+        try:
+            result = json.loads(response.content)
+        except ValueError:
+             raise BitcasaException(response.status_code, "Failed to decode response")
+
         if response.status_code != 200:
             raise BitcasaException(result['error']['code'], result['error']['message'])
         return BitcasaFolder.folder_from_response(self, name, path, result['result']['items'])

@@ -1,6 +1,6 @@
 BitcasaFileLister
 =================
-Version 0.5.3
+Version 0.5.4
 
 List and download files in your Bitcasa drive 
 
@@ -145,7 +145,6 @@ and the following dst: ```/mnt/networkdrives/c/documents/```<br>
 /mnt/tmp/documents/successfiles.txt
 /mnt/tmp/documents/errorfiles.txt
 /mnt/tmp/documents/skippedfiles.txt
-/mnt/tmp/documents/otherfiles/
 
 /mnt/networkdrives/c/documents/
 /mnt/networkdrives/c/documents/myfile1.ext

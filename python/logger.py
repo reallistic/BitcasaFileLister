@@ -1,4 +1,4 @@
-import logging
+import logging, os
 from logging.handlers import RotatingFileHandler
 import utils
 
@@ -23,6 +23,9 @@ if not args.test:
 	filehandler.setLevel(LOGLEVEL)
 	filehandler.setFormatter(lFormat)
 	logger.addHandler(filehandler)
+	if os.path.isfile(logfile):
+		logger.handlers[0].doRollover()
+
 
 if args.console or args.test:
     #Console logger

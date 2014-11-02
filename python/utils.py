@@ -1,8 +1,12 @@
 import math, sys, argparse, os
 from bitcasa import BitcasaClient
 from bitcasa.exception import BitcasaException
+import webbrowser
 CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
+
+CLIENTID = "641eed83"
+CLIENTSECRET = "3c6382bcaa8ffeec448b565c71853c2c"
 
 def convert_size(size):
     if size <= 0:
@@ -16,6 +20,24 @@ def convert_size(size):
     else:
         return '0B'
 
+def convert_time(secs):
+    if secs <= 0:
+        return '%s secs' % secs
+    size_name = ("secs", "minutes", "hours", "days")
+    i = int(math.floor(math.log(secs, 60)))
+    one_day = 60*60*24
+    if i > 2 or secs >= one_day:
+        power = math.pow(60, 2)
+        elapsed = round((secs/power)/24, 2)
+        i = 3
+    else:
+        power = math.pow(60, i)
+        elapsed = round(secs/power, 2)
+    if elapsed > 0:
+        return '%s %s' % (elapsed, size_name[i])
+    else:
+        return '%s secs' % secs
+
 def get_speed(size, time):
     if size <= 0 or time <= 0:
         return "0B/s"
@@ -27,6 +49,7 @@ def get_args():
     bitc = BitcasaClient(CLIENTID, CLIENTSECRET, "https://rose-llc.com/bitcasafilelist/")
     if "--oauth" in sys.argv:
         sys.stdout.write("%s\n" % bitc.login_url)
+        webbrowser.open(bitc.login_url)
         sys.exit(1)
     elif "--clientcreds" in sys.argv:
         print "CLIENTID %s" % CLIENTID
@@ -65,7 +88,7 @@ def get_args():
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("--testauth", dest="test", help="test capability to connect to infinite drive", action="store_true")
     parser.add_argument("-p","--progress", dest="progress", help="Log download progress every 60 secs", action="store_true")
-    parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.3')
+    parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.4')
     args = parser.parse_args()
 
 

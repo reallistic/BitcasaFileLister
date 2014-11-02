@@ -29,3 +29,17 @@
 * Added -p, --progress flag to occasionally log progress
 * Let the logging module print the thread number
 * Better logging messages
+
+## Version 0.5.4
+* Major performance improvements, specifically with traversing filestructures
+* Better exception handling
+* When the api rate limit is reached, the program will always retry at an increased timeout
+* Multi-threaded folder traversing
+* Folder traversing is no longer done via recursion. Instead, there are multi-threaded "queuers" that will scan a directory, queue file downloads, and folder traversals.
+* Better interrupt handling
+* Better decoding of filenames and convert names with disallowed characters to proper os format
+* Removed bug where some files would get copied twice
+* File copies are now retried
+* Temporary downloads are now done directly in the temp folder so there is no file structure left over
+* If a file returns the same incorrect size 3 times it is kept
+* Some other stuff I can't remember lol
