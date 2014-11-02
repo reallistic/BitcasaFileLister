@@ -1,12 +1,8 @@
-import math, sys, argparse, os
+import math, sys, argparse, os, webbrowser
 from bitcasa import BitcasaClient
-from bitcasa.exception import BitcasaException
-import webbrowser
+from bitcasa.exception import BitcasaException 
 CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
-
-CLIENTID = "641eed83"
-CLIENTSECRET = "3c6382bcaa8ffeec448b565c71853c2c"
 
 def convert_size(size):
     if size <= 0:
