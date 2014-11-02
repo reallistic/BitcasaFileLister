@@ -43,7 +43,7 @@ cd BitcasaFileLister/python
 This script requires the `requests` python module which can be installed via the following command:
 
 ```
-pip install requests
+pip install requests unidecode threading
 ```
 
 Before first run
