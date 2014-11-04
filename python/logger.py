@@ -23,8 +23,9 @@ if not args.test:
 	filehandler.setLevel(LOGLEVEL)
 	filehandler.setFormatter(lFormat)
 	logger.addHandler(filehandler)
-	if os.path.isfile(logfile):
+	if os.path.getsize(logfile) > maxsize/2:
 		logger.handlers[0].doRollover()
+		logger.debug("Log rollover")
 
 
 if args.console or args.test:
@@ -35,5 +36,4 @@ if args.console or args.test:
     logger.addHandler(consolehandler)
 
 logger.info("Logging loaded %s", logfile)
-if args.verbose:
-	logger.debug("Debug is set")
+logger.debug("Debug is set")

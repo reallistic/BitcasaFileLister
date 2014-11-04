@@ -70,7 +70,7 @@ def get_log_args():
     elif not args.log and not args.temp and not args.gdrive:
         args.log = os.path.join(args.dst, "runlog.txt")
         args.logdir = args.dst
-    elif not args.log and not args.temp and args.grive:
+    elif not args.log and not args.temp and args.gdrive:
         args.log = "runlog.txt"
         args.logdir = "."
     #initialize temp dir
