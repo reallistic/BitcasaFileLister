@@ -21,6 +21,9 @@ This script is particularly useful for:
 * Migrating from bitcasa to another provider
 * Downloading large files and directories locally
 * Downloading/copying large amounts of files from Bitcasa
+* Uploading move/copy from bitcasa to GoogleDrive
+
+**NOTE:** Please see [Using the gdrive branch](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Using-the-gdrive-branch)
 
 
 **NOTE:** This script works best with python 2.7. It is untested with 3 and fails with 2.6.
