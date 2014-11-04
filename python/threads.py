@@ -3,25 +3,37 @@ from hashlib import sha1
 import urllib, requests
 from logger import logger as log
 import utils
+from gdrive import GoogleDrive
 
 BASE_URL = "https://developer.api.bitcasa.com/v1/files/"
 
 class SizeMismatchError(Exception):
     pass
 
+class UploadError(Exception):
+    pass
+
+try:
+    WindowsError
+except NameError:
+    class WindowsError(Exception):
+        pass
+
 class RunThreaded(threading.Thread):
     def __init__(self, item, thread_num, parent):
-        threading.Thread.__init__(self, name=(thread_num+1))
+        name = "Download %s" % (thread_num+1)
+        threading.Thread.__init__(self, name=name)
         self.nm = item["filename"]
         self.base64path = item["filepath"]
         self.size_bytes = item["filesize"]
         self.size_str = utils.convert_size(self.size_bytes)
         self.thread_num = thread_num
         self.fulldest = item["filedir"]
-
         self.prt = parent
         self.destpath = item["fullpath"]
         self.tmppath = ""
+        self.gdrive = parent.gdrive
+        self.g = parent.g
 
     def run(self):
         sizecopied = 0
@@ -42,7 +54,7 @@ class RunThreaded(threading.Thread):
         #This technically should never happen but technically you never know
             self.cleanUpAfterError(traceback.format_exc(), self.destpath)
 
-        if not os.path.exists(self.fulldest) or (self.prt.tmp and not os.path.exists(fulltmp)):
+        if (not self.gdrive and not os.path.exists(self.fulldest)) or (self.prt.tmp and not os.path.exists(fulltmp)):
             self.cleanUpAfterError("Missing temp or destination parent directory", self.destpath)
         
         self.tmppath = os.path.join(fulltmp, self.nm)
@@ -64,8 +76,12 @@ class RunThreaded(threading.Thread):
                 with open(self.tmppath, 'wb') as tmpfile:
                     st = time.time()
                     timespan = 0
-                    req = requests.get(apidownloaduri, stream=True, timeout=120)
-                    chunk_size  = 1024
+                    headers = {'Accept-Encoding': 'gzip,deflate,sdch', 
+                       'Accept': '*/*',
+                       'Connection': 'keep-alive',
+                       'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36'}
+                    req = requests.get(apidownloaduri, stream=True, headers=headers, timeout=120)
+                    chunk_size = 1024
                     #if not sizemismatched:
                     chunk_size += 1024 * 1024
                     for chunk in req.iter_content(chunk_size=chunk_size):
@@ -82,7 +98,12 @@ class RunThreaded(threading.Thread):
                             #    tmpfile.flush()
                             #    os.fsync(tmpfile.fileno())
                     timespan = (time.time()-st)
-                if sizecopied != self.size_bytes and not self.prt.end:
+                if req.status_code == 429:
+                    apiratecount += 1
+                    raise requests.exceptions.RequestException("Api rate limit")
+                elif req.status_code != requests.codes.ok:
+                    req.raise_for_status()
+                elif sizecopied != self.size_bytes and not self.prt.end:
                     raise SizeMismatchError("Download size mismatch downloaded %s expected %s" % (sizecopied, self.size_bytes))
                 elif self.prt.end:
                     self.cleanUpAfterError("Recieved signaled stop during download", self.destpath)
@@ -148,19 +169,35 @@ class RunThreaded(threading.Thread):
             return
         self.prt.bytestotal += self.size_bytes
         if self.prt.tmp:
-            log.info("Copying from temp to dest")
+            if self.gdrive:
+                log.info("Uploading %s %s", self.nm, utils.convert_size(sizecopied))
+            else:
+                log.info("Copying %s %s", self.nm, utils.convert_size(sizecopied))
             retriesleft = 3
             while retriesleft > 0:
                 try:
                     st = time.time()
                     timespan = 0
-                    with open(self.tmppath, 'rb') as f, open(self.destpath, "wb") as fo:
-                        while True and not self.prt.end:
-                            piece = f.read(1024)
-                            if piece:
-                                fo.write(piece)
-                            else:
-                                break
+                    if self.gdrive:
+                        log.debug("Uploading file %s to parent %s", self.nm, self.fulldest)
+                        result = self.g.upload_file(self.tmppath, self.nm, parent=self.fulldest)
+                        if not result:
+                            raise UploadError("Upload failed")
+                    else:
+                        progress = time.time() + 60
+                        sizecopied = 0
+                        with open(self.tmppath, 'rb') as f, open(self.destpath, "wb") as fo:
+                            while True and not self.prt.end:
+                                piece = f.read(1024)
+                                sizecopied += len(piece)
+                                if self.prt.progress and progress < time.time():
+                                    progress = time.time() + 60
+                                    speed = utils.get_speed(sizecopied, (time.time()-st))
+                                    log.info("%s\nDownloaded %s of %s at %s", self.nm, utils.convert_size(sizecopied), self.size_str, speed)
+                                if piece:
+                                    fo.write(piece)
+                                else:
+                                    break
 
                     timespan = (time.time()-st)
                     if self.prt.end:
@@ -176,6 +213,14 @@ class RunThreaded(threading.Thread):
                 except SystemExit:
                     self.cleanUpAfterError("Received signal exit", self.destpath)
                     raise
+                except UploadError:
+                    retriesleft -= 1
+                    if retriesleft > 0:
+                        self.g.delete_filebyname(self.nm, parent=self.fulldest)
+                        log.exception("Error uploading file wil retry %s more times", retriesleft)
+                    else:
+                        log.exception("Error file could not be uploaded to %s", self.destpath)
+                        self.cleanUpAfterError(traceback.format_exc(), self.destpath)
                 except: 
                     #This technically should never happen but technically you never know
                     retriesleft -= 1
@@ -204,8 +249,8 @@ class RunThreaded(threading.Thread):
 
         # log file to errorfiles.txt
         self.prt.writeError(self.nm, path, self.base64path, e)
-
-        self.delete_dest
+        if not self.gdrive:
+            self.delete_dest()
 
         #cleanup temp file
         try:

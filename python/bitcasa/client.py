@@ -29,7 +29,13 @@ class BitcasaClient(object):
                 'code': code
             }
         response = requests.get(url, params=params)
-        result = json.loads(response.content)
+        try:
+            result = json.loads(response.content)
+        except ValueError:
+            content = response.content
+            if len(content) > 2048:
+                content = content[:2048]
+            raise BitcasaException(response.status_code, "Failed to decode response %s" % content)
         if response.status_code != 200:
             raise BitcasaException(result['error']['code'], result['error']['message'])
         access_token = result['result']['access_token']
@@ -60,7 +66,10 @@ class BitcasaClient(object):
         try:
             result = json.loads(response.content)
         except ValueError:
-             raise BitcasaException(response.status_code, "Failed to decode response")
+            content = response.content
+            if len(content) > 2048:
+                content = content[:2048]
+            raise BitcasaException(response.status_code, "Failed to decode response %s" % content)
 
         if response.status_code != 200:
             raise BitcasaException(result['error']['code'], result['error']['message'])
@@ -160,6 +169,33 @@ class BitcasaClient(object):
         url += '?' + qs
         response = requests.get(url, stream=True)
         if response.status_code != 200:
-            result = json.loads(response.content)
+            try:
+                result = json.loads(response.content)
+            except ValueError:
+                content = response.content
+                if len(content) > 2048:
+                    content = content[:2048]
+                raise BitcasaException(response.status_code, "Failed to decode response %s" % content)
             raise BitcasaException(result['error']['code'], result['error']['message'])
         return response.iter_content(chunk_size=1024)
+
+    def get_file_meta(self, path):
+        url = '{0}files{1}'.format(BASEURL, path)
+        params = [
+            ('access_token', self.access_token)
+        ]
+        qs = urllib.urlencode(params)
+        url += '?' + qs
+        response = requests.get(url, stream=True)
+        try:
+            result = json.loads(response.content)
+        except ValueError:
+            content = response.content
+            if len(content) > 2048:
+                content = content[:2048]
+            raise BitcasaException(response.status_code, "Failed to decode response %s" % content)
+        if response.status_code != 200:
+            raise BitcasaException(result['error']['code'], result['error']['message'])
+        item = result['result']
+        f = BitcasaFile(self, item['path'], item['name'], item['extension'], item['size'])
+        return f

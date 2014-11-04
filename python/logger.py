@@ -3,7 +3,7 @@ from logging.handlers import RotatingFileHandler
 import utils
 
 logger = logging.getLogger(__name__)
-args = utils.get_args()
+args = utils.get_log_args()
 logfile = args.log
 if not logfile or logfile == "":
     logfile = 'bitcasafilelister.log'
@@ -34,6 +34,6 @@ if args.console or args.test:
     consolehandler.setFormatter(lFormat)
     logger.addHandler(consolehandler)
 
-logger.info("Logging loaded")
+logger.info("Logging loaded %s", logfile)
 if args.verbose:
 	logger.debug("Debug is set")

@@ -1,8 +1,11 @@
-import math, sys, argparse, os, webbrowser
-from bitcasa import BitcasaClient
-from bitcasa.exception import BitcasaException 
 CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
+
+import math, sys, argparse, os, webbrowser, hashlib
+from bitcasa import BitcasaClient
+from bitcasa.exception import BitcasaException
+from unidecode import unidecode
+import tempfile
 
 def convert_size(size):
     if size <= 0:
@@ -41,6 +44,68 @@ def get_speed(size, time):
     speed = convert_size(speed)
     return str(speed+"/s")
 
+def md5sum(filename, blocksize=65536):
+    hasher = hashlib.md5()
+    with open(filename, "r+b") as f:
+        for block in iter(lambda: f.read(blocksize), ""):
+            hasher.update(block)
+    return hasher.hexdigest()
+
+def get_log_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("src", help="The Bitcasa base64 path for file source", default="", nargs="?")
+    parser.add_argument("dst", help="The final destination root dir or your files.\
+        Note: if using with --gdrive this needs to be the root folder id", default="./", nargs="?")
+    parser.add_argument("-l", "--log", help="Full path to log file")
+    parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
+    parser.add_argument("--noconsole", dest="console", help="do not log to console", action="store_false")
+    parser.add_argument("--testauth", dest="test", help="test capability to connect to infinite drive", action="store_true")
+    parser.add_argument("-t", "--temp", dest="temp", help="The temp dir to store downloaded files.\
+        Note: this option is mandatory when --gdrive is present")
+    parser.add_argument("--gdrive", help="Upload files directly to google drive", action="store_true")
+    args, unknown = parser.parse_known_args()
+    if not args.log and args.temp:
+        args.log = os.path.join(args.temp, "runlog.txt")
+        args.logdir = args.temp
+    elif not args.log and not args.temp and not args.gdrive:
+        args.log = os.path.join(args.dst, "runlog.txt")
+        args.logdir = args.dst
+    elif not args.log and not args.temp and args.grive:
+        args.log = "runlog.txt"
+        args.logdir = "."
+    #initialize temp dir
+    try:
+        if not os.path.isdir(args.logdir):
+            os.makedirs(args.logdir)
+    except:
+        sys.stderr.write("Error creating log directory\n")
+        raise
+    return args
+
+def get_decoded_name(nm):
+    needunidecode = False
+    tempname = "".join(i for i in nm if i not in "\/:*?<>|%\"")
+    tempname = tempname.strip()
+    tempname = os.path.join(tempfile.gettempdir(), tempname)
+    try:
+        open(tempname, 'a').close()
+    except:
+        needunidecode = True
+    finally:
+        try:
+            os.remove(tempname)
+        except:
+            pass
+    try:
+        if needunidecode:
+            nm = unidecode(nm)
+        nm = nm.encode('utf-8')
+        nm = "".join(i for i in nm if i not in "\/:*?<>|%\"")
+        nm = nm.strip()
+    except:
+        raise
+    return nm
+
 def get_args():
     bitc = BitcasaClient(CLIENTID, CLIENTSECRET, "https://rose-llc.com/bitcasafilelist/")
     if "--oauth" in sys.argv:
@@ -73,24 +138,25 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--settoken", dest="token", help="Set the access token from Bitcasa. You only need to do this once.")
     parser.add_argument("src", help="The Bitcasa base64 path for file source")
-    parser.add_argument("dst", help="The final destination root dir or your files")
-    parser.add_argument("-t", "--temp", help="The temp dir to store downloaded files. (Should be a local folder)")
+    parser.add_argument("dst", help="The final destination root dir or your files.\
+        Note: if using with --gdrive this needs to be the root folder id")
+    parser.add_argument("-t", "--temp", help="The temp dir to store downloaded files.\
+        Note: this option is mandatory when --gdrive is present")
     parser.add_argument("-l", "--log", help="Full path to log file")
     parser.add_argument("--depth", type=int, help="Specify depth of folder traverse. 0 is same as --norecursion")
-    parser.add_argument("-m", "--threads", type=int, help="Specify the max number of threads to use for downloading. Default is 5")
-    parser.add_argument("--norecursion", dest="rec", help="Do not go below the src folder. (Same as --depth=0)", action="store_true")
-    parser.add_argument("--noconsole", dest="console", help="do not log to console", action="store_true")
+    parser.add_argument("-m", "--threads", dest="threads", type=int, help="Specify the max number of threads to use for downloading. Default is 5")
+    parser.add_argument("--silentqueuer", help="Silence queuer output", action="store_true")
+    parser.add_argument("-s", "--single", dest="single", help="download a single file", action="store_true")
+    parser.add_argument("--gdrive", help="Upload files directly to google drive", action="store_true")
+    parser.add_argument("--norecursion", dest="rec", help="Do not go below the src folder. (Same as --depth=0)", action="store_false")
+    parser.add_argument("--noconsole", dest="console", help="do not log to console", action="store_false")
     parser.add_argument("--oauth", help="Get the url to authenticate and retrieve an access token", action="store_true")
     parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
     parser.add_argument("--testauth", dest="test", help="test capability to connect to infinite drive", action="store_true")
-    parser.add_argument("-p","--progress", dest="progress", help="Log download progress every 60 secs", action="store_true")
+    parser.add_argument("-p", "--progress", dest="progress", help="Log download progress every 60 secs", action="store_true")
     parser.add_argument('--version', help="Displays version and exits", action='version', version='%(prog)s 0.5.4')
     args = parser.parse_args()
 
-
-    if not args.dst or not args.src:
-        sys.stderr.write("Source and destination are required.\n")
-        sys.exit(2)
     if not os.path.isfile("token.ini"):
         sys.stderr.write("Please retrive an access token using the following command.\n")
         sys.stderr.write("python getfiles.py --oauth\n")
@@ -102,8 +168,9 @@ def get_args():
         except OSError:
             sys.stderr.write("Failed to retrieve permanent token\n")
             raise
-    if not args.temp:
-        args.local = True
+    if args.gdrive and not args.temp:
+        sys.stderr.write("In order to use google drive you must specify a temp dir\n")
+        sys.exit(2)
 
     if not args.log and args.temp:
         args.log = os.path.join(args.temp, "runlog.txt")
@@ -116,10 +183,8 @@ def get_args():
         if not os.path.isdir(args.logdir):
             os.makedirs(args.logdir)
     except:
-        sys.stderr.write("Error creating log directory\n")
+        sys.stderr.write("Error creating temp directory\n")
         raise
-    args.rec = not args.rec
-    args.console = not args.console
 
     if args.depth > 0 and not args.rec:
         sys.stdout.write("Note: Non 0 depth and --no-recursion parameter present. Assuming recusion")
