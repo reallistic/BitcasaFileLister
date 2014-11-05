@@ -6,8 +6,9 @@ from oauth2client.file import Storage
 from apiclient import errors
 from datetime import datetime
 import time
-
-from logger import logger as logging
+import logging
+from logger import logger as log
+logging.basicConfig(level=logging.CRITICAL)
 
 CLIENT_ID = '209996072777-uqfb5rt8acelm9isq225ljrls85jb7dl.apps.googleusercontent.com'
 CLIENT_SECRET = 'nc_lKEIwyE3iXKy0fNiLP699'
@@ -30,17 +31,17 @@ class GoogleDrive(object):
         try:
             storage.put(credentials)
         except RuntimeError as e:
-            logging.error("Error storing credentials")
-            logging.error(e)
+            log.error("Error storing credentials")
+            log.error(e)
         else:
-            logging.info("Stored google drive credentials Successfully")
+            log.info("Stored google drive credentials Successfully")
         
 
     @staticmethod
     def do_oauth():
         flow = OAuth2WebServerFlow(CLIENT_ID, CLIENT_SECRET, OAUTH_SCOPE, REDIRECT_URI)
         url = flow.step1_get_authorize_url()
-        logging.info(url)
+        log.info(url)
         webbrowser.open(url)
         code = raw_input("Enter token ")
         GoogleDrive.authorize_token(code, flow)
@@ -59,13 +60,13 @@ class GoogleDrive(object):
             drive_service = build('drive', 'v2', http=http)
             drive_service.children().list(folderId=folder_id).execute()
         except (errors.HttpError, AccessTokenRefreshError):
-            logging.exception("Connection test failed")
+            log.exception("Connection test failed")
             return False
         except:
-            logging.exception("Connection test failed")
+            log.exception("Connection test failed")
             return False
         else:
-            logging.info("Connection test successfull")
+            log.info("Connection test successfull")
             return True
 
 
@@ -86,7 +87,7 @@ class GoogleDrive(object):
             drive_service.files().insert(body=body, media_body=media_body).execute()
             return True
         except:
-            logging.exception("Error uploading file %s", filepath)
+            log.exception("Error uploading file %s", filepath)
             return False
 
 
@@ -113,7 +114,7 @@ class GoogleDrive(object):
             else:
                 return original
         except errors.HttpError:
-            logging.exception("Error checking for file")
+            log.exception("Error checking for file")
             return None
 
     def delete_filebyname(self, filename, parent="root"):
@@ -125,7 +126,7 @@ class GoogleDrive(object):
             if retriesleft > 0:
                 myfile = self.check_file_exists(filename, parent=parent)
             else:
-                logging.error("Error checking if file exists. Will retry %s more times", retriesleft)
+                log.error("Error checking if file exists. Will retry %s more times", retriesleft)
                 return False
         if myfile:
             self.delete_file(myfile["id"])
@@ -142,7 +143,7 @@ class GoogleDrive(object):
             if retriesleft > 0:
                 myfile = self.check_file_exists(filename, parent=folder_id)
             else:
-                logging.error("Error checking if file exists. Will retry %s more times", retriesleft)
+                log.error("Error checking if file exists. Will retry %s more times", retriesleft)
                 return False
         if myfile and int(myfile["fileSize"]) == size_bytes:
             return False
@@ -174,7 +175,7 @@ class GoogleDrive(object):
 
             if original is None:
                 if createnotfound:
-                    logging.info("No items by the name of %s found. Creating", foldername)
+                    log.info("No items by the name of %s found. Creating", foldername)
                     body = {
                         'title': foldername,
                         'mimeType':'application/vnd.google-apps.folder'
@@ -183,12 +184,12 @@ class GoogleDrive(object):
                         body['parents'] = [{'id':parent}]
                     return drive_service.files().insert(body=body).execute()
                 else:
-                    logging.info("No items by the name of %s found", foldername)
+                    log.info("No items by the name of %s found", foldername)
                     return None
             else:
                 return original
         except errors.HttpError:
-            logging.exception("Error getting or creating folder")
+            log.exception("Error getting or creating folder")
             return None
 
 
@@ -200,13 +201,13 @@ class GoogleDrive(object):
             drive_service = build('drive', 'v2', http=http)
             drive_service.files().delete(fileId=fileid)
         except errors.HttpError:
-            logging.exception("Error deleting file")
+            log.exception("Error deleting file")
             return False
 
 
 if __name__ == '__main__':
     g = GoogleDrive()
-    if "--oauth" in sys.argv or not g.test_auth():
+    if "--oauth" in sys.argv or not g.credentials or not g.test_auth():
         GoogleDrive.do_oauth()
     else:
         print "auth already available"

@@ -43,10 +43,10 @@ General instructions below
 git clone https://github.com/rxsegrxup/BitcasaFileLister.git
 cd BitcasaFileLister/python
 ```
-This script requires the `requests` python module which can be installed via the following command:
+This script requires the `requests` and `unidecode` python modules which can be installed via the following command:
 
 ```
-pip install requests unidecode threading
+pip install requests unidecode
 ```
 
 Before first run
