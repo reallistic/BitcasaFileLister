@@ -8,7 +8,8 @@ from datetime import datetime
 import time
 import logging
 from logger import logger as log
-logging.basicConfig(level=logging.CRITICAL)
+logger = logging.getLogger("oauth2client.util")
+logger.setLevel(logging.CRITICAL)
 
 CLIENT_ID = '209996072777-uqfb5rt8acelm9isq225ljrls85jb7dl.apps.googleusercontent.com'
 CLIENT_SECRET = 'nc_lKEIwyE3iXKy0fNiLP699'
