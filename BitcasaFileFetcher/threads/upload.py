@@ -23,8 +23,9 @@ def upload(queue, should_exit, completed_uploads, results, args):
         parent_id = item["filedir"]
 
         log.info("Uploading %s %s", filename, size_str)
-        retriesleft = 3
+        retriesleft = 10
         while retriesleft > 0 and not should_exit.is_set():
+            g.get_service()
             try:
                 st = time.time()
                 timespan = 0

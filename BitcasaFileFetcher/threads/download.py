@@ -57,7 +57,7 @@ def download(args):
             continue
 
         if command_args.temp:
-            filehash = sha1("blob " + str(size_bytes) + "\0" + temp_file)
+            filehash = sha1("blob " + str(size_bytes) + "\0" + item["filepath"])
             tmpname = filehash.hexdigest()
             temp_file = os.path.join(command_args.temp, tmpname)
             item["temppath"] = temp_file

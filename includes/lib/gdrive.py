@@ -182,7 +182,7 @@ class GoogleDrive(object):
                     log.debug("Auth token refresh failed. New auth needed")
                     self.credentials = None
                     if promptForAuth:
-                        return self.create_client()
+                        self.get_service(True)
                     else:
                         raise
             elif promptForAuth:

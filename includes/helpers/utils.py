@@ -2,7 +2,7 @@ CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
 REDIRECT_URI = "http://localhost:1115/bitcasafilelister/auth/"
 
-import math, os, hashlib, logging, tempfile
+import math, os, hashlib, logging, tempfile, chardet
 BITCASA_TOKEN = os.path.abspath("bitcasa.ini")
 GDRIVE_CREDS = os.path.abspath("gdrive.ini")
 GDRIVE_SECRETS = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../lib", "gdrive_secrets.ini"))
@@ -64,10 +64,7 @@ def md5sum(filename, blocksize=65536):
     return hasher.hexdigest()
 
 def get_decoded_name(nm):
-    try:
-        nm = nm.decode().encode('utf-8')
-        nm = "".join(i for i in nm if i not in "\/:*?<>|%\"")
-        nm = nm.strip()
-    except:
-        raise
+    nm = "".join(i for i in nm if i not in "\/:*?<>|%\"")
+    nm = nm.strip()
+    nm = nm.decode(chardet.detect(nm)["encoding"]).encode('utf-8')
     return nm

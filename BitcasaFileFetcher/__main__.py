@@ -111,7 +111,7 @@ class Args(object):
             help="Log file download progress every 60 secs")
         mainparser.add_argument(
             '--version', help="Displays version and exits",
-            action='version', version='%(prog)s 0.6.0')
+            action='version', version='%(prog)s 0.6.1')
 
         downparser = subparsers.add_parser("download", parents=[mainparser],
             help="Program to download files from bitcasa to local/network storage")
@@ -160,7 +160,7 @@ def main():
     from helpers import utils
     from getfiles import BitcasaDownload
     from lib import BitcasaUtils
-    from lib.gdrive import GoogleDrive 
+    from lib.gdrive import GoogleDrive
 
     if args.run_level == Args.RUN_LEVEL_MAIN:
         bitcasa_utils = BitcasaUtils()

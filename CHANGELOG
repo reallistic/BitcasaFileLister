@@ -53,3 +53,10 @@
 * Resume interrupted downloads
 * Better handling of api limit errors when downloading
 * Tons more, its late, I'm going to sleep LOL
+
+## Version 0.6.1
+* Using chardet to hopefully detect the proper encoding for file names
+* Fixed a bug in the gdrive wrapper
+* Set upload and download retry to 10
+* During upload google drive will refresh the auth token if needed
+* Use base64 path for sha1 hash to prevent unicode errors
