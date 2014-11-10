@@ -59,9 +59,10 @@ General instructions below
 ```
 git clone https://github.com/rxsegrxup/BitcasaFileLister.git
 cd BitcasaFileLister
-
+```
 
 Before first run please read the help screens
+
 ```
 python BitcasaFileFetcher -h
 python BitcasaFileFetcher download -h
@@ -77,6 +78,7 @@ python BitcasaFileLister
 ```
 
 If you plan to upload to Google Drive you need to oauth manually using the following command
+
 ```
 python BitcasaFileFetcher oauth --provider gdrive
 ```
@@ -87,7 +89,8 @@ Download your first files
 python BitcasaFileFetcher download <base64 src directory> <destination directory>
 ```
 
-#Usage
+# Usage
+
 ```
 usage: BitcasaFileFetcher [-h] {oauth,testauth,download,upload} ...
 
@@ -158,19 +161,25 @@ optional arguments:
   --provider {gdrive}   The remote storage provider in question (default is
                         gdrive)
 ```
+
 ## Download Run examples:
+
 ```
 python BitcasaFileFetcher download /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/
 ```
 * Simple execution
 * All logging will be sent to /mnt/networkdrive/c/documents/bitcasafilefetcher.log (this is the default)
 * Files will be downloaded directly to destination
+
+
 ```
 python BitcasaFileFetcher download /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -m 3 >bitcasafilefetcher.log 2>&1 &
 ```
 * Run in background
 * Direct stdout and stderr to bitcasafilefetcher.log
 * All logging will be sent to /mnt/tmp/documents/bitcasafilefetcher.log (this is the default)
+
+
 ```
 python BitcasaFileFetcher download /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/ -t /mnt/tmp/documents/ -l /var/log/bitcasafilelist/bitcasafilefetcher.log --noconsole > /var/log/bitcasafilelist/bitcasafilefetcher.log 2>&1 &
 ```
@@ -180,6 +189,7 @@ python BitcasaFileFetcher download /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/d
 * All logging will be sent to /var/log/bitcasafilelist/bitcasafilefetcher.log
 
 ## Upload Run examples:
+
 ```
 python BitcasaFileFetcher upload /B-W80yjUQfC6umkOCahHMQ root -t /mnt/tmp/documents/
 python BitcasaFileFetcher upload /B-W80yjUQfC6umkOCahHMQ root -t /mnt/tmp/documents/ --provider gdrive
@@ -187,6 +197,7 @@ python BitcasaFileFetcher upload /B-W80yjUQfC6umkOCahHMQ root -t /mnt/tmp/docume
 * Simple execution
 * All logging will be sent to /mnt/tmp/documents/bitcasafilefetcher.log (this is the default)
 * Files will be downloaded to temp and then uploaded to the google drive root
+
 
 ```
 python BitcasaFileFetcher upload /B-W80yjUQfC6umkOCahHMQ 0B9LKTRBFbYN1d0VwQWJFYXBoS0k -t /mnt/tmp/documents/
