@@ -111,7 +111,7 @@ class Args(object):
             help="Log file download progress every 60 secs")
         mainparser.add_argument(
             '--version', help="Displays version and exits",
-            action='version', version='%(prog)s 0.5.3')
+            action='version', version='%(prog)s 0.6.0')
 
         downparser = subparsers.add_parser("download", parents=[mainparser],
             help="Program to download files from bitcasa to local/network storage")
