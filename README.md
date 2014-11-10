@@ -57,6 +57,7 @@ To install on windows (**not yet updated for version 0.6.0**) [click here](https
 General instructions below
 
 ```
+pip install httplib2 uritemplate
 git clone https://github.com/rxsegrxup/BitcasaFileLister.git
 cd BitcasaFileLister
 ```
