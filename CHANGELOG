@@ -43,3 +43,13 @@
 * Temporary downloads are now done directly in the temp folder so there is no file structure left over
 * If a file returns the same incorrect size 3 times it is kept
 * Some other stuff I can't remember lol
+
+## Version 0.6.0
+* Converted the FileLister into a python web application
+* Better handling of foreign characters
+* Added upload to google drive
+* Better thread management
+* Better handling of shutdown
+* Resume interrupted downloads
+* Better handling of api limit errors when downloading
+* Tons more, its late, I'm going to sleep LOL
