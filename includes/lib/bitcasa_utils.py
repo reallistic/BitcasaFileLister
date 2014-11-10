@@ -34,6 +34,7 @@ class BitcasaUtils(object):
         try:
             self.client.get_folder("/")
         except:
+            log.exception("Could not connect to bitcasa")
             return False
         else:
             return True
