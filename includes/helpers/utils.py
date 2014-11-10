@@ -2,9 +2,6 @@ CLIENTID = "758ab3de"
 CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
 REDIRECT_URI = "http://localhost:1115/bitcasafilelister/auth/"
 
-CLIENTID = "60faf911"
-CLIENTSECRET = "2e091a0f545e05cd0692c76f3f334784"
-
 import math, os, hashlib, logging, tempfile
 BITCASA_TOKEN = os.path.abspath("bitcasa.ini")
 GDRIVE_CREDS = os.path.abspath("gdrive.ini")
