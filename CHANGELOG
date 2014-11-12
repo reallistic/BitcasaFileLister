@@ -60,3 +60,12 @@
 * Set upload and download retry to 10
 * During upload google drive will refresh the auth token if needed
 * Use base64 path for sha1 hash to prevent unicode errors
+
+## Version 0.6.2
+* Using codecs.open to write raw unicode chars ot files
+* Fixed a small bug in copy.py
+* Changed the name of getfiles.py so people will stop trying to use it :)
+* Added capability to do a --dryrun
+* Added capability to set --folderthreads max
+* When testing auth take into account api limit
+* Don't launch borwser when using --nolaunch with oauth

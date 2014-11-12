@@ -70,7 +70,7 @@ class Args(object):
             parents=[providerprt])
         oauthparser.add_argument(
             "-v", "--verbose", help="increase output verbosity", action="count")
-        oauthparser.add_argument("-n","--nolaunch", help="Don't launch browser", action="store_true")
+        oauthparser.add_argument("-n", "--nolaunch", help="Don't launch browser", action="store_true")
         oauthparser.set_defaults(func=self.run_oauth)
 
         testsparser = subparsers.add_parser(
@@ -121,7 +121,7 @@ class Args(object):
             help="Runs through the program logging all skipped and downloaded files without actually downloading anything", default=False)
         mainparser.add_argument(
             '--version', help="Displays version and exits",
-            action='version', version='%(prog)s 0.6.1')
+            action='version', version='%(prog)s 0.6.2')
 
         downparser = subparsers.add_parser("download", parents=[mainparser],
             help="Program to download files from bitcasa to local/network storage")

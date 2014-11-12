@@ -21,7 +21,7 @@ To run the server without launching a browser simply add the `-n` or `--nolaunch
 python BitcasaFileLister -n
 ```
 
-**Note:** As of version 0.6.0, the Bitcasa oauth command will launch the BitcasaFileFetcher server
+**Note:** As of version 0.6, the Bitcasa oauth command will launch the BitcasaFileLister server, open your browser to the necessary Bitcasa Login screen and, upon succesful log in, store your token to the bitcasa.ini file for you.
 
 
 You can access the legacy hosted php version of this at [Rose-llc.com](https://rose-llc.com/bitcasafilelist/)
@@ -53,15 +53,15 @@ Presently it seems the requests module does not respect the timeout for streamed
 
 # Install
  **NOTE: The wikis contains some valid info but none of them have the updated command syntax. For that please read on below.**
+ **NOTE: It should no longer be necessary to install dependencies. If you run into any dependency issues please post an [issue](https://github.com/rxsegrxup/BitcasaFileLister/issues)**
 
 Check the [wiki](https://github.com/rxsegrxup/BitcasaFileLister/wiki/) for more guides and instructions.
 
-To install on windows (**not yet updated for version 0.6.0**) [click here](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Windows-install-instructions)
+(**not yet updated for version 0.6**) To install on windows [click here](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Windows-install-instructions)
 
 General instructions below
 
 ```
-pip install httplib2 uritemplate
 git clone https://github.com/rxsegrxup/BitcasaFileLister.git
 cd BitcasaFileLister
 ```
@@ -76,13 +76,13 @@ python BitcasaFileFetcher oauth -h
 python BitcasaFileFetcher testauth -h
 ```
 
-Launch the FileLister for bitcasa oauth and base64 paths
+Launch the FileLister for bitcasa oauth and base64 paths which will open your browser to the necessary Bitcasa Login screen and, upon succesful log in, store your token to the bitcasa.ini file for you.
 
 ```
 python BitcasaFileLister
 ```
 
-If you plan to upload to Google Drive you need to oauth manually using the following command
+If you plan to upload to Google Drive you need to oauth manually using the following command which will open your browser to the necessary Google Login screen and, upon succesful log in, present a token that must be copied and entered in the console.
 
 ```
 python BitcasaFileFetcher oauth --provider gdrive
@@ -96,8 +96,9 @@ python BitcasaFileFetcher download <base64 src directory> <destination directory
 
 # Usage
 
+### General
 ```
-usage: BitcasaFileFetcher [-h] {oauth,testauth,download,upload} ...
+usage: python BitcasaFileFetcher [-h] {oauth,testauth,download,upload} ...
 
 Download files from bitcasa recursively
 
@@ -113,11 +114,17 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
 
+```
 
-usage: BitcasaFileFetcher download [-h] [-l LOG] [-m THREADS]
+### Download
+
+```
+usage: python BitcasaFileFetcher download [-h] [-l LOG] [-m THREADS]
+                                   [-f FOLDERTHREADS]
                                    [--norecursion | --depth DEPTH]
-                                   [--silentqueuer] [-s] [--noconsole] [-v]
-                                   [-p] [--version] [-t TEMP]
+                                   [--silentqueuer] [-s] [--noconsole]
+                                   [--nofilelog] [-v] [-p] [--dryrun]
+                                   [--version] [-t TEMP]
                                    src dst
 
 positional arguments:
@@ -129,19 +136,30 @@ optional arguments:
   -l LOG, --log LOG     Full path to log file
   -m THREADS, --threads THREADS
                         Number of simultaneous downloads. (5)
+  -f FOLDERTHREADS, --folderthreads FOLDERTHREADS
+                        Number of simultaneous folder lookups. (5)
   --norecursion         Do not go below the src folder. (Same as --depth 0)
   --depth DEPTH         The depth of folder traversal
   --silentqueuer        Silence queuer output
   -s, --single          download a single file
   --noconsole           do not log to console
+  --nofilelog           do not log to success, error, or skipped files
   -v, --verbose         increase output verbosity
-  -p, --progress        Log file download progress every 60 secs
+  -p, --progress        Log download progress every 60 secs
+  --dryrun              Runs through the program logging all skipped and
+                        downloaded files without actually downloading anything
   --version             Displays version and exits
   -t TEMP, --temp TEMP  The dir for temp files. (A local folder)
 
-usage: BitcasaFileFetcher upload [-h] [-l LOG] [-m THREADS]
+```
+
+### Upload
+
+```
+usage: python BitcasaFileFetcher upload [-h] [-l LOG] [-m THREADS] [-f FOLDERTHREADS]
                                  [--norecursion | --depth DEPTH]
-                                 [--silentqueuer] [-s] [--noconsole] [-v] [-p]
+                                 [--silentqueuer] [-s] [--noconsole]
+                                 [--nofilelog] [-v] [-p] [--dryrun]
                                  [--version] -t TEMP [--provider {gdrive}]
                                  src dst
 
@@ -154,20 +172,27 @@ optional arguments:
   -l LOG, --log LOG     Full path to log file
   -m THREADS, --threads THREADS
                         Number of simultaneous downloads. (5)
+  -f FOLDERTHREADS, --folderthreads FOLDERTHREADS
+                        Number of simultaneous folder lookups. (5)
   --norecursion         Do not go below the src folder. (Same as --depth 0)
   --depth DEPTH         The depth of folder traversal
   --silentqueuer        Silence queuer output
   -s, --single          download a single file
   --noconsole           do not log to console
+  --nofilelog           do not log to success, error, or skipped files
   -v, --verbose         increase output verbosity
-  -p, --progress        Log file download progress every 60 secs
+  -p, --progress        Log download progress every 60 secs
+  --dryrun              Runs through the program logging all skipped and
+                        downloaded files without actually downloading anything
   --version             Displays version and exits
   -t TEMP, --temp TEMP  The dir for temp files. (A local folder)
   --provider {gdrive}   The remote storage provider in question (default is
                         gdrive)
+
 ```
 
-## Download Run examples:
+# Examples
+### Download:
 
 ```
 python BitcasaFileFetcher download /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/documents/
@@ -193,7 +218,7 @@ python BitcasaFileFetcher download /B-W80yjUQfC6umkOCahHMQ /mnt/networkdrive/c/d
 * Direct stdout and stderr to /var/log/bitcasafilelist/bitcasafilefetcher.log
 * All logging will be sent to /var/log/bitcasafilelist/bitcasafilefetcher.log
 
-## Upload Run examples:
+### Upload:
 
 ```
 python BitcasaFileFetcher upload /B-W80yjUQfC6umkOCahHMQ root -t /mnt/tmp/documents/
@@ -242,7 +267,7 @@ and the following dst: ```/mnt/networkdrives/c/documents/```<br>
 This script was developed in order to move files from bitcasa to network storage. Although it uses caching, it does not clog up the system with temp files.
 As soon as a file is copied from temp to destination, it is deleted thus minimizing caching impact. If there is an error, the file is also deleted.
 
-#Future Plans
+# Future Plans
 
 
 * Upload directly to cloud providers (~~google drive~~, opendrive, copy)
