@@ -3,6 +3,7 @@ insert_path = os.path.abspath("./includes/")
 sys.path.append(insert_path)
 insert_path = os.path.abspath("./includes/lib/")
 sys.path.append(insert_path)
+from helpers import utils
 import server
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(threadName)s][%(levelname)s]: %(message)s', datefmt='%m/%d %H:%M:%S')
 log = logging.getLogger("BitcasaFileLister")
@@ -10,7 +11,7 @@ log = logging.getLogger("BitcasaFileLister")
 def open_browser(cancel_open):
     time.sleep(5)
     if not cancel_open.is_set():
-        webbrowser.open("http://localhost:1115/bitcasafilelister/")
+        webbrowser.open(utils.SERVER_URL)
 
 if __name__ == '__main__':
     mainparser = argparse.ArgumentParser(prog="BitcasaFileLister", description="List files in Bitcasa")

@@ -73,7 +73,7 @@ def list_bitcasa_files(base64="/"):
 def do_bitcasa_auth():
     authorization_code = request.query.authorization_code
     bitcasa_utils = BitcasaUtils()
-    client = bitcasa_utils.create_client(force=True, redirect_uri="http://localhost:1115/bitcasafilelister/auth")
+    client = bitcasa_utils.create_client(force=True, redirect_uri=utils.REDIRECT_URI)
     auth_name="View Files"
     auth_url="/bitcasafilelister/files/"
     error_msg = ""
@@ -111,7 +111,7 @@ def do_bitcasa_auth():
 def start():
     """start server"""
     try:
-        run(server="cherrypy", host='0.0.0.0', port=1115, reloader=False)
+        run(server="cherrypy", host=utils.SERVER_HOST, port=utils.SERVER_PORT, reloader=False)
     except:
         raise
 

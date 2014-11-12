@@ -16,6 +16,7 @@ class BitcasaUtils(object):
             try:
                 with open(utils.BITCASA_TOKEN, "r") as tokenfile:
                     self.token = tokenfile.read()
+                log.debug("Got token")
             except:
                 log.exception("Failed to read Bitcasa token file")
         else:
@@ -32,10 +33,13 @@ class BitcasaUtils(object):
         if not self.client:
             return False
         try:
-            self.client.get_folder("/")
-        except:
-            log.exception("Could not connect to bitcasa")
-            return False
+            self.client.get_user_profile()
+        except BitcasaException as e:
+            if e.code == 9006:
+                return True
+            else:
+                log.exception("Error connecting to bitcasa %s" % e.code)
+                return False
         else:
             return True
 

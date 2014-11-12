@@ -41,6 +41,23 @@ class BitcasaClient(object):
         access_token = result['result']['access_token']
         self.access_token = access_token
 
+    def get_user_profile(self):
+        url = '{0}user/profile'.format(BASEURL)
+        params = {
+            'access_token': self.access_token
+        }
+        response = requests.get(url, params=params)
+        try:
+            result = json.loads(response.content)
+        except ValueError:
+            content = response.content
+            if len(content) > 2048:
+                content = content[:2048]
+            raise BitcasaException(response.status_code, "Failed to decode response %s" % content)
+        if response.status_code != 200:
+            raise BitcasaException(result['error']['code'], result['error']['message'])
+        return result["result"]
+
     def create_folder(self, path, name):
         url = '{0}folders{1}'.format(BASEURL, path)
         params = {

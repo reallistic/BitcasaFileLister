@@ -99,7 +99,7 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
             try:
                 nm = utils.get_decoded_name(nm)
             except:
-                log.warn("Error encoding to utf-8. Will parse anyway")
+                log.warn("Error removing special characters. Will try and parse anyway")
             encnm = nm.replace("'","\\'")
             base64_path = item.path
             filesize = None
@@ -109,28 +109,34 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                 filesize = item.size
                 needtoupload = g.need_to_upload(encnm, folder_id, filesize)
                 if needtoupload:
-                    if not args.silentqueuer:
-                        log.debug("Queuing file download for %s", nm)
-                    filedownload = {
-                        "filename": nm,
-                        "filepath": base64_path,
-                        "filesize": filesize,
-                        "fullpath": tfd,
-                        "filedir": folder_id
-                    }
-                    download_queue.put(filedownload)
+                    if args.dryrun:
+                        if not args.silentqueuer:
+                            log.debug("%s %s", nm, filesize)
+                            results.writeSuccess(tfd)
+                    else:
+                        if not args.silentqueuer:
+                            log.debug("Queuing file download for %s", nm)
+                        filedownload = {
+                            "filename": nm,
+                            "filepath": base64_path,
+                            "filesize": filesize,
+                            "fullpath": tfd,
+                            "filedir": folder_id
+                        }
+                        download_queue.put(filedownload)
                 else:
                     results.writeSkipped(tfd, base64_path, nm)
 
             elif isinstance(item, BitcasaFolder):
+                cnf = not args.dryrun
                 if args.rec and (not args.depth or args.depth > depth):
-                    g_fold = g.get_folder_byname(encnm, parent=folder_id, createnotfound=True)
+                    g_fold = g.get_folder_byname(encnm, parent=folder_id, createnotfound=cnf)
                     remainingtries = 3
                     while not should_exit.is_set() and g_fold is None and remainingtries > 0:
                         remainingtries -= 1
                         log.error("Will retry to get/create %s %s more times", nm, remainingtries)
                         time.sleep(5)
-                        g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=True)
+                        g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
                     if should_exit.is_set():
                         log.debug("Stopping folder list")
                         return
@@ -162,7 +168,7 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
     fulldest = os.path.abspath(os.path.join(args.dst, path))
     remainingtries = 3
      #Create temp dir and dest dir if needed
-    while fulldest and remainingtries > 0:
+    while not args.dryrun and fulldest and remainingtries > 0:
         if should_exit.is_set():
             log.debug("Stopping folder list")
             return
@@ -217,16 +223,21 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
                 if fexists:
                     results.writeSkipped(tfd, base64_path, nm)
                 else:
-                    if not args.silentqueuer:
-                        log.debug("Queuing file download for %s", nm)
-                    filedownload = {
-                        "filename": nm,
-                        "filepath": base64_path,
-                        "filesize": filesize,
-                        "fullpath": tfd,
-                        "filedir": fulldest
-                    }
-                    download_queue.put(filedownload)
+                    if args.dryrun:
+                        if not args.silentqueuer:
+                            log.debug("%s %s", nm, filesize)
+                            results.writeSuccess(tfd)
+                    else:
+                        if not args.silentqueuer:
+                            log.debug("Queuing file download for %s", nm)
+                        filedownload = {
+                            "filename": nm,
+                            "filepath": base64_path,
+                            "filesize": filesize,
+                            "fullpath": tfd,
+                            "filedir": fulldest
+                        }
+                        download_queue.put(filedownload)
             elif isinstance(item, BitcasaFolder):
                 if args.rec and (not args.depth or args.depth > depth):
                     if not args.silentqueuer:

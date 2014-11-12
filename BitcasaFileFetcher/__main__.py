@@ -70,6 +70,7 @@ class Args(object):
             parents=[providerprt])
         oauthparser.add_argument(
             "-v", "--verbose", help="increase output verbosity", action="count")
+        oauthparser.add_argument("-n","--nolaunch", help="Don't launch browser", action="store_true")
         oauthparser.set_defaults(func=self.run_oauth)
 
         testsparser = subparsers.add_parser(
@@ -93,6 +94,9 @@ class Args(object):
         mainparser.add_argument(
             "-m", "--threads", help="Number of simultaneous downloads. (5)",
             type=int, default=5)
+        mainparser.add_argument(
+            "-f", "--folderthreads", help="Number of simultaneous folder lookups. (5)",
+            type=int, default=5)
         main_group = mainparser.add_mutually_exclusive_group()
         main_group.add_argument(
             "--norecursion", dest="rec", action="store_false",
@@ -105,10 +109,16 @@ class Args(object):
             "--noconsole", dest="console", help="do not log to console",
             action="store_false", default=True)
         mainparser.add_argument(
+            "--nofilelog", dest="nofilelog", help="do not log to success, error, or skipped files",
+            action="store_true", default=False)
+        mainparser.add_argument(
             "-v", "--verbose", help="increase output verbosity", action="count")
         mainparser.add_argument(
             "-p", "--progress", dest="progress", action="store_true",
-            help="Log file download progress every 60 secs")
+            help="Log download progress every 60 secs")
+        mainparser.add_argument(
+            "--dryrun", dest="dryrun", action="store_true",
+            help="Runs through the program logging all skipped and downloaded files without actually downloading anything", default=False)
         mainparser.add_argument(
             '--version', help="Displays version and exits",
             action='version', version='%(prog)s 0.6.1')
@@ -158,7 +168,7 @@ def main():
     args.parse()
     log = logger.create("BitcasaFileFetcher", args)
     from helpers import utils
-    from getfiles import BitcasaDownload
+    from bitcasadownload import BitcasaDownload
     from lib import BitcasaUtils
     from lib.gdrive import GoogleDrive
 
@@ -191,7 +201,7 @@ def main():
             bitc.process()
     elif args.run_level == Args.RUN_LEVEL_OAUTH:
         if args.args.provider == "bitcasa":
-            run_server()
+            run_server(args.args.nolaunch)
         elif args.args.provider == "gdrive":
             g = GoogleDrive()
             try:
@@ -218,23 +228,23 @@ def main():
      
     log.info("Done")
 
-def run_server():
+def run_server(nolaunch):
     from subprocess import call
-    call(["python", "BitcasaFileLister"])
+    if nolaunch:
+        call(["python", "BitcasaFileLister", "-n"])
+    else:
+        call(["python", "BitcasaFileLister"])
 
 def handle_input():
     log.debug("Watching for exit")
-    answer = ""
+    answer = raw_input()
     try:
-        while answer.lower() != "y":
-            if answer == "":
-                answer = "n"
-                answer = raw_input()
-            else:
-                answer = raw_input("Would you like to shutdown? [y/n]\n")
-            if answer == "y":
+        while not should_exit.is_set():
+            if answer.lower() in ["y", "q", "quit", "exit"]:
                 log.info("Received exit signal")
                 should_exit.set()
+            else:
+                answer = raw_input("Would you like to shutdown? [y/n]\n")
     except (KeyboardInterrupt, IOError, EOFError):
         log.info("Received exit signal")
         should_exit.set()

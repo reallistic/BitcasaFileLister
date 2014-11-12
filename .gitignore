@@ -215,3 +215,5 @@ pip-log.txt
 .mr.developer.cfg
 sftp-config.json
 token.ini
+bitcasa.ini
+gdrive.ini

@@ -69,7 +69,7 @@ def copy(queue, should_exit, completed_copies, results, args):
                     log.exception("Error moving file will retry %s more times", retriesleft)
                 else:
                     log.exception("Error file could not be moved to %s", destpath)
-                    results.writeError(item["filename"], item["fullpath"], item["filepath"], e)
+                    results.writeError(item["filename"], item["fullpath"], item["filepath"], "Move failed")
             else:
                 retriesleft = 0
                 if args.progress:

@@ -4,7 +4,6 @@ from datetime import datetime
 from googleapiclient import errors
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-#from apiclient.http import MediaFileUpload
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenRefreshError, flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run_flow as RunFlow
@@ -149,7 +148,7 @@ class GoogleDrive(object):
                     return self.get_service().files().insert(body=body).execute()
                 else:
                     log.info("No items by the name of %s found", foldername)
-                    return None
+                    return False
             else:
                 return original
         except errors.HttpError:
@@ -187,7 +186,7 @@ class GoogleDrive(object):
                         raise
             elif promptForAuth:
                 flow = flow_from_clientsecrets(utils.GDRIVE_SECRETS, scope='https://www.googleapis.com/auth/drive')
-                flow.redirect_uri = REDIRECT_URI
+                flow.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
                 flow.params['access_type'] = 'offline'
                 flow.params['approval_prompt'] = 'force'
                 url = flow.step1_get_authorize_url()

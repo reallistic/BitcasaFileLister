@@ -1,6 +1,6 @@
 BitcasaFileLister
 =================
-Version 0.6.0
+Version 0.6
 
 List and download files in your Bitcasa drive
 
@@ -40,7 +40,7 @@ This script is particularly useful for:
 * Downloading/copying large amounts of files from Bitcasa
 * Uploading move/copy from bitcasa to GoogleDrive
 
-**NOTE:** Please see [Using the gdrive branch (not yet updated for version 0.6.0)](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Using-the-gdrive-branch)
+**NOTE:** Please see [Using the gdrive branch (not yet updated for version 0.6)](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Using-the-gdrive-branch)
 
 
 **NOTE:** This script works best with python 2.7.x and fails with others.
@@ -48,7 +48,11 @@ This script is particularly useful for:
 It is **recommended** that you run the FileFetcher and FileLister using your own client id and secret by following these directions:
 [Adding custom api keys to the utils.py](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Adding-custom-api-keys)
 
-#Install
+# A note on stalling
+Presently it seems the requests module does not respect the timeout for streamed downloads using iter_content. becasue of this, the application will sometimes stall. From what I have seen, if it is stalled (and be sure it is in fact stalled for at least 10 mins), you can safely issue a **SINGLE** CTRL+C or Esc. In my experience this will unstall whatever is holding things up, and continue as usual.
+
+# Install
+ **NOTE: The wikis contains some valid info but none of them have the updated command syntax. For that please read on below.**
 
 Check the [wiki](https://github.com/rxsegrxup/BitcasaFileLister/wiki/) for more guides and instructions.
 
