@@ -60,7 +60,7 @@ class GoogleDrive(object):
 
     def check_file_exists(self, filename, parent="root"):
         try:
-            children = self.get_service().children().list(folderId=parent, q="title = '%s'" % filename).execute()
+            children = self.get_service().children().list(folderId=parent, q="title = '%s'" % filename.replace("'", "\\'")).execute()
             items = children.get('items', [])
             original = None
             for child in items:
@@ -68,8 +68,8 @@ class GoogleDrive(object):
                 if original is None:
                     original = child_file
                 else:
-                    o = time.strptime(original["createdDate"], "%Y-%d-%mT%H:%M:%S.%fZ")
-                    t = time.strptime(child_file["createdDate"], "%Y-%d-%mT%H:%M:%S.%fZ")
+                    o = time.strptime(original["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                    t = time.strptime(child_file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
                     if t < o:
                         original = child_file
             if original is None:
@@ -114,7 +114,7 @@ class GoogleDrive(object):
         if myfile and int(myfile["fileSize"]) == size_bytes:
             return False
         elif myfile:
-            log.debug("Filesize incorrect deleting", filename)
+            log.debug("Filesize incorrect deleting %s", filename)
             self.delete_file(myfile["id"])
             return True
         else:
@@ -122,17 +122,19 @@ class GoogleDrive(object):
 
     def get_folder_byname(self, foldername, parent="root", createnotfound=False):
         try:
-            children = self.get_service().children().list(folderId=parent, q="title = '%s' and mimeType = 'application/vnd.google-apps.folder'" % foldername).execute()
+            children = self.get_service().children().list(folderId=parent,
+                q="title = '%s' and mimeType = 'application/vnd.google-apps.folder'" % foldername.replace("'", "\\'")).execute()
             items = children.get('items', [])
             
             original = None
             for child in items:
                 child_file = self.get_service().files().get(fileId=child["id"]).execute()
+
                 if original is None:
                     original = child_file
                 else:
-                    o = time.strptime(original["createdDate"], "%Y-%d-%mT%H:%M:%S.%fZ")
-                    t = time.strptime(child_file["createdDate"], "%Y-%d-%mT%H:%M:%S.%fZ")
+                    o = time.strptime(original["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                    t = time.strptime(child_file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
                     if t < o:
                         original = child_file
 

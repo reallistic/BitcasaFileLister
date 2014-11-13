@@ -1,4 +1,4 @@
-import thread, time, os, logging
+import thread, time, os, logging, codecs
 from hashlib import sha1
 import requests
 from helpers import utils
@@ -69,7 +69,7 @@ def download(args):
             if apiratecount > 5:
                 apiratecount = 5
             try:
-                mode = "wb"
+                mode = "w"
                 filecomplete = False
                 seek = 0
                 sizecopied = 0
@@ -83,13 +83,13 @@ def download(args):
                     elif seek > 0:
                         sizecopied += seek
                         log.info("continuing download")
-                        mode = "ab"
+                        mode = "a"
                 except:
                     pass
                 if not filecomplete:
                     req = session.get(apidownloaduri, stream=True, timeout=120, headers={'Range':"bytes=%s-" % seek})
                     req.raise_for_status()
-                    with open(temp_file, mode) as tmpfile:
+                    with codecs.open(temp_file, mode, 'utf-8') as tmpfile:
                         st = time.time()
                         cr = st
                         progress_time = st + 60

@@ -1,4 +1,4 @@
-import time, os, shutil, logging
+import time, os, shutil, logging, codecs
 from helpers import utils
 from Queue import Empty as EmptyException
 log = logging.getLogger("BitcasaFileFetcher")
@@ -27,7 +27,7 @@ def copy(queue, should_exit, completed_copies, results, args):
         seek = 0
         while retriesleft > 0 and not should_exit.is_set():
             try:
-                mode = "wb"
+                mode = "w"
                 filecomplete = False
                 try:
                     seek = os.path.getsize(destpath)
@@ -37,7 +37,7 @@ def copy(queue, should_exit, completed_copies, results, args):
                     elif seek == tmpsize:
                         filecomplete = True
                     elif seek > 0:
-                        mode = "ab"
+                        mode = "a"
                 except:
                     pass
                 if not filecomplete:
@@ -45,7 +45,7 @@ def copy(queue, should_exit, completed_copies, results, args):
                     st = time.time()
                     progress = st + 60
                     cr = st
-                    with open(tmppath, 'rb') as f, open(destpath, mode) as fo:
+                    with codecs.open(tmppath, 'r', 'utf-8') as f, codecs.open(destpath, mode, 'utf-8') as fo:
                         if seek:
                             f.seek(seek)
                         while not should_exit.is_set():

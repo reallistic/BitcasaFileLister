@@ -100,14 +100,14 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                 nm = utils.get_decoded_name(nm)
             except:
                 log.warn("Error removing special characters. Will try and parse anyway")
-            encnm = nm.replace("'","\\'")
+
             base64_path = item.path
             filesize = None
             needtoupload = False
             tfd = os.path.join(path, nm)
             if isinstance(item, BitcasaFile):
                 filesize = item.size
-                needtoupload = g.need_to_upload(encnm, folder_id, filesize)
+                needtoupload = g.need_to_upload(nm, folder_id, filesize)
                 if needtoupload:
                     if args.dryrun:
                         if not args.silentqueuer:
@@ -130,7 +130,7 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
             elif isinstance(item, BitcasaFolder):
                 cnf = not args.dryrun
                 if args.rec and (not args.depth or args.depth > depth):
-                    g_fold = g.get_folder_byname(encnm, parent=folder_id, createnotfound=cnf)
+                    g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
                     remainingtries = 3
                     while not should_exit.is_set() and g_fold is None and remainingtries > 0:
                         remainingtries -= 1
@@ -153,7 +153,7 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                     }
                     folder_queue.put(folder)
         except: #Hopefully this won't get called
-            results.writeError(encnm, tfd, base64_path, traceback.format_exc())
+            results.writeError(nm, tfd, base64_path, traceback.format_exc())
 
 def folder_list(folder, folder_queue, download_queue, results, args, should_exit):
     fold = folder["folder"]
