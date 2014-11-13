@@ -80,7 +80,7 @@ def copy(queue, should_exit, completed_copies, results, args):
                 except:
                     log.exception("Failed cleaning up temp file %s", tmppath)
 
-                results.writeSuccess(destpath)
+                results.writeSuccess(destpath, item["filepath"])
                 completed_copies.append({
                     "timespan": timespan,
                     "size_copied": sizecopied,

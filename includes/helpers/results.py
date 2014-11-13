@@ -10,12 +10,12 @@ class Results(object):
         self.nolog_to_file = nolog
         self.create_log_files()
     
-    def writeSuccess(self, filept):
+    def writeSuccess(self, tfd, filept):
         if self.nolog_to_file:
             return
         try:
             with codecs.open(self.successfiles, 'a', 'utf-8') as myfile:
-                myfile.write("%s\n" % filept)
+                myfile.write("%s||%s\n" % (tfd, filept))
         except:
             log.exception("Error. Could not write to %s. Ending", self.successfiles)
             self.should_exit.set()
@@ -59,7 +59,7 @@ class Results(object):
         try:
             log.debug("Creating file %s", self.successfiles)
             with open(self.successfiles, 'w+') as myfile:
-                myfile.write("File path\n")
+                myfile.write("File path||Base64 Path\n")
                 myfile.write(time.strftime("%Y-%m-%d %H:%M:%S") + " Start\n")
             log.debug("Creating file %s", self.errorfiles)
             with open(self.errorfiles, 'w+') as myfile:

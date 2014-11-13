@@ -112,7 +112,7 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                     if args.dryrun:
                         if not args.silentqueuer:
                             log.debug("%s %s", nm, filesize)
-                            results.writeSuccess(tfd)
+                            results.writeSuccess(tfd, base64_path)
                     else:
                         if not args.silentqueuer:
                             log.debug("Queuing file download for %s", nm)
@@ -226,7 +226,7 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
                     if args.dryrun:
                         if not args.silentqueuer:
                             log.debug("%s %s", nm, filesize)
-                            results.writeSuccess(tfd)
+                            results.writeSuccess(tfd, base64_path)
                     else:
                         if not args.silentqueuer:
                             log.debug("Queuing file download for %s", nm)

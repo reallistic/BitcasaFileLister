@@ -159,7 +159,7 @@ def download(args):
                     next_queue.put(item)
                 else:
                     log.info("Finished download %s in %s", item["fullpath"], utils.convert_time(timespan))
-                    results.writeSuccess(item["fullpath"])
+                    results.writeSuccess(item["fullpath"], item["filepath"])
                 if progress:
                     speed = utils.get_speed(sizecopied-seek, timespan)
                     log.info("%s downloaded at %s", size_str, speed)

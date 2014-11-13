@@ -60,7 +60,7 @@ def upload(queue, should_exit, completed_uploads, results, args):
                     speed = utils.get_speed(size_bytes, timespan)
                     log.info("%s uploaded at %s", size_str, speed)
                 log.info("Finished uploading %s", filename)
-                results.writeSuccess(result["id"])
+                results.writeSuccess(item["fullpath"], result["id"])
         try:
             queue.task_done()
         except ValueError:
