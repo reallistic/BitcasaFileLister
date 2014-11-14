@@ -28,7 +28,10 @@ class BitcasaClient(object):
                 'secret': self.secret,
                 'code': code
             }
-        response = requests.get(url, params=params)
+        try:
+            response = requests.get(url, params=params)
+        except:
+            raise BitcasaException(500, "Error with request")
         try:
             result = json.loads(response.content)
         except ValueError:
@@ -46,7 +49,10 @@ class BitcasaClient(object):
         params = {
             'access_token': self.access_token
         }
-        response = requests.get(url, params=params)
+        try:
+            response = requests.get(url, params=params)
+        except:
+            raise BitcasaException(500, "Error with request")
         try:
             result = json.loads(response.content)
         except ValueError:
@@ -79,7 +85,11 @@ class BitcasaClient(object):
         params = {
             'access_token': self.access_token
         }
-        response = requests.get(url, params=params)
+        try:
+            response = requests.get(url, params=params)
+        except:
+            raise BitcasaException(500, "Error with request")
+
         try:
             result = json.loads(response.content)
         except ValueError:
@@ -87,6 +97,7 @@ class BitcasaClient(object):
             if len(content) > 2048:
                 content = content[:2048]
             raise BitcasaException(response.status_code, "Failed to decode response %s" % content)
+
 
         if response.status_code != 200:
             raise BitcasaException(result['error']['code'], result['error']['message'])
@@ -184,7 +195,10 @@ class BitcasaClient(object):
             params.append(('path', path))
         qs = urllib.urlencode(params)
         url += '?' + qs
-        response = requests.get(url, stream=True)
+        try:
+            response = requests.get(url, stream=True)
+        except:
+            raise BitcasaException(500, "Error with request")
         if response.status_code != 200:
             try:
                 result = json.loads(response.content)
@@ -203,7 +217,10 @@ class BitcasaClient(object):
         ]
         qs = urllib.urlencode(params)
         url += '?' + qs
-        response = requests.get(url, stream=True)
+        try:
+            response = requests.get(url, stream=True)
+        except:
+            raise BitcasaException(500, "Error with request")
         try:
             result = json.loads(response.content)
         except ValueError:
