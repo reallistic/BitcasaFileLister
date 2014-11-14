@@ -59,7 +59,7 @@ def get_folder_items(fold, should_exit):
             elif e.code >= 500 and e.code < 600:
                 apiratecount += 1
                 remainingtries += 1
-                log.warn("Bitcasa error. Will retry")
+                log.warn("Bitcasa error %s getting files. Will retry" % e.code)
             else:
                 log.warn("Failed to get folder contents %s. Will retry %s more times", e.code, remainingtries)
 

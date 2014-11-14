@@ -1,4 +1,4 @@
-import thread, time, os, logging
+import thread, time, os, logging, errno
 from hashlib import sha1
 import requests
 from helpers import utils
@@ -137,11 +137,31 @@ def download(args):
                     time.sleep(10)
                 else:
                     cleanUpAfterError("Error downloading %s Maximum retries reached" % filename, item, results)
+            except IOError as e:
+                if e.errno == errno.ENOSPC:
+                    try:
+                        testitem = next_queue.get(False)
+                    except (EmptyException, AttributeError):
+                        log.critical("No space left on target or temp disk. Exiting")
+                        should_exit.set()
+                    else:
+                        next_queue.put(testitem)
+                        log.warn("Out of space. Waiting")
+                        time.sleep(10)
+                else:
+                    retriesleft -= 1
+                    if retriesleft > 0:
+                        log.exception("Error downloading %s. Will retry %s more times", filename, retriesleft)
+                        time.sleep(10)
+                    else:
+                        cleanUpAfterError("An unknown error occurred", item, results)
+
+
             except:
                 retriesleft -= 1
                 if retriesleft > 0:
                     log.exception("Error downloading %s. Will retry %s more times", filename, retriesleft)
-                    time.sleep(10 * apiratecount)
+                    time.sleep(10)
                 else:
                     cleanUpAfterError("An unknown error occurred", item, results)
             else:

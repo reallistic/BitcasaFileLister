@@ -1,4 +1,4 @@
-import time, os, shutil, logging
+import time, os, shutil, logging, errno
 from helpers import utils
 from Queue import Empty as EmptyException
 log = logging.getLogger("BitcasaFileFetcher")
@@ -63,6 +63,18 @@ def copy(queue, should_exit, completed_copies, results, args):
                     timespan = (cr-st)
                 if should_exit.is_set():
                     log.info("Stopping Move")
+            except IOError as e:
+                if e.errno == errno.ENOSPC:
+                    log.critical("No space left on target disk. Exiting")
+                    should_exit.set()
+                else:
+                    retriesleft -= 1
+                    if retriesleft > 0:
+                        log.exception("Error downloading %s. Will retry %s more times", filename, retriesleft)
+                        time.sleep(10)
+                    else:
+                        log.exception("Error file could not be moved to %s", destpath)
+                        results.writeError(item["filename"], item["fullpath"], item["filepath"], "Move failed")
             except: 
                 retriesleft -= 1
                 if retriesleft > 0:
