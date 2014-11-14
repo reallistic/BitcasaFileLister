@@ -171,7 +171,7 @@ class GoogleDrive(object):
             return True
         return self.credentials.access_token_expired
 
-    def auth(self, promptForAuth):
+    def auth(self, promptForAuth, launchBrowser):
         """Authorize an http client, asking the user if required.
         """
         if self.token_expired:
@@ -192,7 +192,9 @@ class GoogleDrive(object):
                 flow.params['access_type'] = 'offline'
                 flow.params['approval_prompt'] = 'force'
                 url = flow.step1_get_authorize_url()
-                webbrowser.open(url)
+                log.info(url)
+                if launchBrowser:
+                    webbrowser.open(url)
                 code = raw_input("Enter token ")
                 self.credentials = flow.step2_exchange(code)
             else:
@@ -205,11 +207,11 @@ class GoogleDrive(object):
     def can_token_refresh(self):
         return self.credentials is not None and self.credentials.refresh_token is not None
 
-    def get_service(self, promptForAuth=False):
+    def get_service(self, promptForAuth=False, launchBrowser=False):
         if self.service is None or self.token_expired:
             if self.http is None:
                 self.http = httplib2.Http()
-            self.auth(promptForAuth)
+            self.auth(promptForAuth, launchBrowser)
             self.service =  build('drive', 'v2', http=self.http)
 
         return self.service

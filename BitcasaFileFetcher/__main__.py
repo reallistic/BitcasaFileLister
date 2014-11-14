@@ -205,7 +205,7 @@ def main():
         elif args.args.provider == "gdrive":
             g = GoogleDrive()
             try:
-                g.get_service(True)
+                g.get_service(True, not args.args.nolaunch)
             except:
                 log.exception("Error authenticating to Google drive")
 
