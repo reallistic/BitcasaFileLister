@@ -149,6 +149,8 @@ class Args(object):
         """Run the main program checks"""
         self.run_level = Args.RUN_LEVEL_MAIN
         self.args.upload = upload
+        if not upload:
+            self.args.local = False
         self.set_log_file()
 
     def run_upload(self):
