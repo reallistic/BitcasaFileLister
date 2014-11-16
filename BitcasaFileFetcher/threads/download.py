@@ -1,4 +1,4 @@
-import thread, time, os, logging, errno
+import thread, time, os, logging, errno, random
 from hashlib import sha1
 import requests
 from helpers import utils
@@ -18,25 +18,23 @@ except NameError:
     class WindowsError(Exception):
         pass
 
-def download(args):
+def download(status, should_exit, session, results, command_args):
     log.debug("Starting up")
-    queue, next_queue, should_exit, is_prev_done, session, completed_downloads, results, command_args = args
-    progress = command_args.progress
-    upload = command_args.upload
     while not should_exit.is_set():
         item = None
         try:
-            item = queue.get(True, 20)
+            item = status.down()
         except EmptyException:
-            if not is_prev_done.is_set():
-                item = None
+            if status.queuers_active > 0 or status.queues > 0:
+                continue
             else:
                 log.debug("Nothing more to download. Shutting down")
                 return
-
         if item is None:
             continue
 
+        random.seed(item["filepath"])
+        sleeptime = random.randint(10, 45)
         filename = item["filename"]
         size_bytes = item["filesize"]
         size_str = utils.convert_size(size_bytes)
@@ -44,7 +42,6 @@ def download(args):
         temp_file = item["fullpath"]
         log.info("%s size %s", filename, size_str)
         timespan = 0
-         #TODO: Add a tuple to the download call in get files
 
         if command_args.temp:
             temp_dir = command_args.temp
@@ -52,7 +49,7 @@ def download(args):
 
         apidownloaduri = "%smyfile.ext?access_token=%s&path=%s" % (BASE_URL, command_args.token, item["filepath"])
 
-        if (not upload and not os.path.exists(item["filedir"])) or (command_args.temp and not os.path.exists(temp_dir)):
+        if (not command_args.upload and not os.path.exists(item["filedir"])) or (command_args.temp and not os.path.exists(temp_dir)):
             cleanUpAfterError("Missing temp or destination parent directory", item, results)
             continue
 
@@ -65,6 +62,7 @@ def download(args):
         log.debug("Downloading file to %s", temp_file)
         retriesleft = 10
         apiratecount = 0
+        down_failed = True
         while retriesleft > 0 and not should_exit.is_set():
             if apiratecount > 5:
                 apiratecount = 5
@@ -101,7 +99,7 @@ def download(args):
                                 break
                             tmpfile.write(chunk)
                             sizecopied += len(chunk)
-                            if progress and progress_time < cr:
+                            if command_args.progress and progress_time < cr:
                                 progress_time = cr + 60
                                 speed = utils.get_speed(sizecopied-seek, (cr-st))
                                 sizecopied_str = utils.convert_size(sizecopied)
@@ -111,7 +109,6 @@ def download(args):
                         
                         if should_exit.is_set():
                             log.info("Stopping download")
-                            break
                         elif sizecopied != size_bytes:
                             raise SizeMismatchError("Download size mismatch downloaded %s expected %s" % (sizecopied, size_bytes))
                         else:
@@ -139,15 +136,12 @@ def download(args):
                     cleanUpAfterError("Error downloading %s Maximum retries reached" % filename, item, results)
             except IOError as e:
                 if e.errno == errno.ENOSPC:
-                    try:
-                        testitem = next_queue.get(False)
-                    except (EmptyException, AttributeError):
+                    if status.up_active > 0 or status.copy_active > 0:
+                        log.warn("Out of space. Waiting %s secs", sleeptime)
+                        time.sleep(sleeptime)
+                    else:
                         log.critical("No space left on target or temp disk. Exiting")
                         should_exit.set()
-                    else:
-                        next_queue.put(testitem)
-                        log.warn("Out of space. Waiting")
-                        time.sleep(10)
                 else:
                     retriesleft -= 1
                     if retriesleft > 0:
@@ -155,8 +149,6 @@ def download(args):
                         time.sleep(10)
                     else:
                         cleanUpAfterError("An unknown error occurred", item, results)
-
-
             except:
                 retriesleft -= 1
                 if retriesleft > 0:
@@ -165,39 +157,38 @@ def download(args):
                 else:
                     cleanUpAfterError("An unknown error occurred", item, results)
             else:
-                retriesleft = 0
-                if timespan <= 0:
-                    timespan = 1
-                completed_downloads.append({
-                    "timespan": timespan,
-                    "size_downloaded": sizecopied,
-                    "temppath": temp_file
-                })
-                if next_queue:
-                    log.info("Finished download %s in %s", filename, utils.convert_time(timespan))
-                    log.debug("Adding to next queue")
-                    next_queue.put(item)
+                if not should_exit.is_set():
+                    down_failed = False
+                    retriesleft = 0
+                    if timespan <= 0:
+                        timespan = 1
+                    status.down({
+                        "timespan": timespan,
+                        "size_downloaded": sizecopied,
+                        "temppath": temp_file
+                    })
+                    if command_args.upload:
+                        log.info("Finished download %s in %s", filename, utils.convert_time(timespan))
+                        log.debug("Adding to upload queue")
+                        status.queue_up(item)
+                    elif command_args.temp:
+                        log.info("Finished download %s in %s", filename, utils.convert_time(timespan))
+                        log.debug("Adding to move queue")
+                        status.queue_copy(item)
+                    else:
+                        log.info("Finished download %s in %s", item["fullpath"], utils.convert_time(timespan))
+                        results.writeSuccess(item["fullpath"], item["filepath"])
+                    if command_args.progress:
+                        speed = utils.get_speed(sizecopied-seek, timespan)
+                        log.info("%s downloaded at %s", size_str, speed)
                 else:
-                    log.info("Finished download %s in %s", item["fullpath"], utils.convert_time(timespan))
-                    results.writeSuccess(item["fullpath"], item["filepath"])
-                if progress:
-                    speed = utils.get_speed(sizecopied-seek, timespan)
-                    log.info("%s downloaded at %s", size_str, speed)
-        try:
-            queue.task_done()
-        except ValueError:
-            pass
+                    cleanUpAfterError("Download stopped", item, results)
+
+        if down_failed:
+            status.down_fail(item)
         log.debug("End of thread")
-    if should_exit.is_set():
-        log.debug("Clearing queue")
-        try:
-            while True:
-                queue.task_done()
-        except ValueError:
-            pass
+
     log.debug("Shutting down")
 
 def cleanUpAfterError(e, item, results):
     results.writeError(item["filename"], item["fullpath"], item["filepath"], e)
-
-    log.debug("End of thread")

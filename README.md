@@ -1,6 +1,6 @@
 BitcasaFileLister
 =================
-Version 0.6
+Version 0.7
 
 List and download files in your Bitcasa drive
 
@@ -21,7 +21,7 @@ To run the server without launching a browser simply add the `-n` or `--nolaunch
 python BitcasaFileLister -n
 ```
 
-**Note:** As of version 0.6, the Bitcasa oauth command will launch the BitcasaFileLister server, open your browser to the necessary Bitcasa Login screen and, upon succesful log in, store your token to the bitcasa.ini file for you.
+**Note:** As of version 0.6, the Bitcasa oauth command will launch the BitcasaFileLister server, open your browser to the necessary Bitcasa Login screen and, upon successful log in, store your token to the bitcasa.ini file for you.
 
 
 You can access the legacy hosted php version of this at [Rose-llc.com](https://rose-llc.com/bitcasafilelist/)
@@ -38,7 +38,8 @@ This script is particularly useful for:
 * Migrating from bitcasa to another provider
 * Downloading large files and directories locally
 * Downloading/copying large amounts of files from Bitcasa
-* Uploading move/copy from bitcasa to GoogleDrive
+* Uploading files from bitcasa to GoogleDrive
+* Uploading local files to GoogleDrive
 
 **NOTE:** Please see [Using the gdrive branch (not yet updated for version 0.6)](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Using-the-gdrive-branch)
 
@@ -49,7 +50,7 @@ It is **recommended** that you run the FileFetcher and FileLister using your own
 [Adding custom api keys to the utils.py](https://github.com/rxsegrxup/BitcasaFileLister/wiki/Adding-custom-api-keys)
 
 # A note on stalling
-Presently it seems the requests module does not respect the timeout for streamed downloads using iter_content. becasue of this, the application will sometimes stall. From what I have seen, if it is stalled (and be sure it is in fact stalled for at least 10 mins), you can safely issue a **SINGLE** CTRL+C or Esc. In my experience this will unstall whatever is holding things up, and continue as usual.
+Presently it seems the requests module does not respect the timeout for streamed downloads using iter_content. because of this, the application will sometimes stall. From what I have seen, if it is stalled (and be sure it is in fact stalled for at least 10 mins), you can safely issue a **SINGLE** CTRL+C or Esc. In my experience this will unstall whatever is holding things up, and continue as usual.
 
 # Install
  **NOTE: The wikis contains some valid info but none of them have the updated command syntax. For that please read on below.**
@@ -160,7 +161,8 @@ usage: python BitcasaFileFetcher upload [-h] [-l LOG] [-m THREADS] [-f FOLDERTHR
                                  [--norecursion | --depth DEPTH]
                                  [--silentqueuer] [-s] [--noconsole]
                                  [--nofilelog] [-v] [-p] [--dryrun]
-                                 [--version] -t TEMP [--provider {gdrive}]
+                                 [--version] [--provider {gdrive}] -t TEMP
+                                 [--local]
                                  src dst
 
 positional arguments:
@@ -185,9 +187,10 @@ optional arguments:
   --dryrun              Runs through the program logging all skipped and
                         downloaded files without actually downloading anything
   --version             Displays version and exits
-  -t TEMP, --temp TEMP  The dir for temp files. (A local folder)
   --provider {gdrive}   The remote storage provider in question (default is
                         gdrive)
+  -t TEMP, --temp TEMP  The dir for temp files. (A local folder)
+  --local               Upload local files
 
 ```
 
@@ -237,6 +240,14 @@ python BitcasaFileFetcher upload /B-W80yjUQfC6umkOCahHMQ 0B9LKTRBFbYN1d0VwQWJFYX
 * Files will be downloaded to temp and then uploaded to the google drive folder with specified id. (Note this folder could be at any depth)
 
 
+```
+python BitcasaFileFetcher upload /cloud/data_bk 0B9LKTRBFbYN1d0VwQWJFYXBoS0k -t /mnt/tmp/documents/ --local
+```
+* Simple execution
+* All logging will be sent to /mnt/tmp/documents/bitcasafilefetcher.log (this is the default)
+* Local files in /cloud/data_bk will be uploaded to the google drive folder with specified id. (Note this folder could be at any depth)
+
+
 For example, if you have the following in Bitcasa:
 
 ```
@@ -273,6 +284,7 @@ As soon as a file is copied from temp to destination, it is deleted thus minimiz
 * Upload directly to cloud providers (~~google drive~~, opendrive, copy)
 * ~~Resume partial downloads~~
 * ~~Copying single file instead of entire directories~~
+* ~~Uploading local files~~
 * Copying lists of files instead of entire directories
 * Python Web Application instead of command line
 * ~~Retry failed downloads~~

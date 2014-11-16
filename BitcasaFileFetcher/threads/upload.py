@@ -1,6 +1,7 @@
 import time, os, logging
 from helpers import utils
 from lib.gdrive import GoogleDrive
+from googleapiclient.errors import HttpError
 import requests
 from Queue import Empty as EmptyException
 
@@ -9,11 +10,18 @@ log = logging.getLogger("BitcasaFileFetcher")
 class UploadError(Exception):
     pass
 
-def upload(queue, should_exit, completed_uploads, results, args):
+def upload(status, should_exit, results, args):
     log.debug("Starting up")
     g = GoogleDrive()
     while not should_exit.is_set():
-        item = queue.get(True)
+        apiratecount = 1
+        try:
+            item = status.up()
+        except EmptyException:
+            if status.queuers_active or status.down_active:
+                continue
+            else:
+                log.debug("Nothing left to upload. Shutting down")
         if item is None:
             continue
         filename = item["filename"]
@@ -24,34 +32,50 @@ def upload(queue, should_exit, completed_uploads, results, args):
 
         log.info("Uploading %s %s", filename, size_str)
         retriesleft = 10
+        up_failed=True
         while retriesleft > 0 and not should_exit.is_set():
-            g.get_service()
+            if apiratecount > 5:
+                apiratecount = 5
             try:
-                st = time.time()
-                timespan = 0
-                log.debug("Uploading file %s to parent %s", filename, parent_id)
-                result = g.upload_file(temp_file, filename, parent=parent_id)
-                if not result:
-                    raise UploadError("Upload failed")
+                g.get_service()
+                needtoupload = g.need_to_upload(filename, parent_id, size_bytes)
+                if needtoupload:
+                    st = time.time()
+                    timespan = 0
+                    log.debug("Uploading file %s to parent %s", filename, parent_id)
+                    result = g.upload_file(temp_file, filename, parent=parent_id)
+                    if not result:
+                        raise UploadError("Upload failed")
+                    timespan = (time.time()-st)
+            except HttpError as e:
+                retriesleft -= 1
+                if e.resp.status == 403:
+                    apiratecount += 1
+                    retriesleft += 1
+                    log.warn("Google API rate limit reached. Will retry")
+                else:
+                    log.exception("Error uploading file will retry %s more times", retriesleft)
 
-                timespan = (time.time()-st)
-                if should_exit.is_set():
-                    log.debug("Stopping upload")
-                    break
+                if retriesleft > 0:
+                    time.sleep(10 * apiratecount)
+                else:
+                    results.writeError(item["filename"], item["fullpath"], item["filepath"], "Error %s could not be uploaded" % filename)
             except:
                 retriesleft -= 1
                 if retriesleft > 0:
-                    g.delete_filebyname(filename, parent=parent_id)
                     log.exception("Error uploading file will retry %s more times", retriesleft)
+                    time.sleep(10 * apiratecount)
                 else:
-                    cleanUpAfterError("Error %s could not be uploaded to" % filename, item, results)
+                    results.writeError(item["filename"], item["fullpath"], item["filepath"], "Error %s could not be uploaded" % filename)
             else:
                 retriesleft = 0
-                try:
-                    os.remove(temp_file)
-                except:
-                    log.exception("Failed cleaning up temp file %s", temp_file)
-                completed_uploads.append({
+                up_failed = False
+                if not args.local:
+                    try:
+                        os.remove(temp_file)
+                    except:
+                        log.exception("Failed cleaning up temp file %s", temp_file)
+                status.up({
                     "timespan": timespan,
                     "size_uploaded": size_bytes,
                     "temppath": temp_file
@@ -61,21 +85,9 @@ def upload(queue, should_exit, completed_uploads, results, args):
                     log.info("%s uploaded at %s", size_str, speed)
                 log.info("Finished uploading %s", filename)
                 results.writeSuccess(item["fullpath"], result["id"])
-        try:
-            queue.task_done()
-        except ValueError:
-            pass
+
+        if up_failed:
+            status.up_fail(item)
         log.debug("End of thread")
-    if should_exit.is_set():
-        log.debug("Clearing queue")
-        try:
-            while True:
-                queue.task_done()
-        except ValueError:
-            pass
+
     log.debug("Shutting down")
-
-def cleanUpAfterError(e, item, results):
-    results.writeError(item["filename"], item["fullpath"], item["filepath"], e)
-
-    log.debug("End of thread")

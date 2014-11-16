@@ -8,7 +8,7 @@ from bitcasa import BitcasaClient
 from bitcasa import BitcasaException
 
 should_exit = threading.Event()
-
+bitc = None
 class Args(object):
     """
     Argument parser wrapper class
@@ -121,7 +121,7 @@ class Args(object):
             help="Runs through the program logging all skipped and downloaded files without actually downloading anything", default=False)
         mainparser.add_argument(
             '--version', help="Displays version and exits",
-            action='version', version='%(prog)s 0.6.3')
+            action='version', version='%(prog)s 0.7.0')
 
         downparser = subparsers.add_parser("download", parents=[mainparser],
             help="Program to download files from bitcasa to local/network storage")
@@ -132,10 +132,12 @@ class Args(object):
         upparser = subparsers.add_parser("upload", parents=[mainparser],
             help="Program to download files from bitcasa and upload to remote storage")
         upparser.add_argument(
-            "-t", "--temp", help="The dir for temp files. (A local folder)", required=True)
-        upparser.add_argument(
             "--provider", help="The remote storage provider in question (default is gdrive)",
             choices=['gdrive'], default='gdrive')
+        upparser.add_argument(
+            "-t", "--temp", help="The dir for temp files. (A local folder)", required=True)
+        upparser.add_argument(
+            "--local", help="Upload local files", action="store_true", default=False)
         upparser.set_defaults(func=self.run_upload)
 
         self.args = parser.parse_args()
@@ -143,15 +145,14 @@ class Args(object):
 
         return self.args
 
-    def run_download(self):
+    def run_download(self, upload=False):
         """Run the main program checks"""
         self.run_level = Args.RUN_LEVEL_MAIN
-        self.args.upload = False
+        self.args.upload = upload
         self.set_log_file()
 
     def run_upload(self):
-        self.run_download()
-        self.args.upload = True
+        self.run_download(True)
 
     def run_test(self):
         """run authentication tests on a specific provider"""
@@ -163,7 +164,7 @@ class Args(object):
     
 
 def main():
-    global log, utils
+    global log, utils, bitc
     args = Args()
     args.parse()
     log = logger.create("BitcasaFileFetcher", args)
@@ -173,13 +174,16 @@ def main():
     from lib.gdrive import GoogleDrive
 
     if args.run_level == Args.RUN_LEVEL_MAIN:
-        bitcasa_utils = BitcasaUtils()
-        if bitcasa_utils.test_auth():
-            args.args.token = bitcasa_utils.token
-        else:
-            log.error("Bitcasa Access token not set or invalid. Use the following commands to get one.")
-            log.info("python BitcasaFileLister")
-            return
+        client = None
+        if not args.args.upload or not args.args.local:
+            bitcasa_utils = BitcasaUtils()
+            if bitcasa_utils.test_auth():
+                args.args.token = bitcasa_utils.token
+            else:
+                log.error("Bitcasa Access token not set or invalid. Use the following commands to get one.")
+                log.info("python BitcasaFileLister")
+                return
+            client = bitcasa_utils.create_client()
         if args.args.upload:
             if args.args.provider == "gdrive":
                 g = GoogleDrive()
@@ -187,8 +191,8 @@ def main():
                     log.error("Google Drive Access token not set or invalid. Use the following command to get one.")
                     log.info("python BitcasaFileFetcher oauth --provider gdrive")
                     return
-        log.debug("Initializing Bitcasa")
-        bitc = BitcasaDownload(args.args, bitcasa_utils.create_client(), should_exit)
+        log.debug("Initializing download")
+        bitc = BitcasaDownload(args.args, client, should_exit)
         if should_exit.is_set():
             log.info("Exiting")
             return
@@ -242,15 +246,21 @@ def handle_input():
         while not should_exit.is_set():
             if answer.lower() in ["y", "q", "quit", "exit"]:
                 log.info("Received exit signal")
+                if bitc:
+                    bitc.shutdown()
                 should_exit.set()
             else:
                 answer = raw_input("Would you like to shutdown? [y/n]\n")
     except (KeyboardInterrupt, IOError, EOFError):
         log.info("Received exit signal")
+        if bitc:
+            bitc.shutdown()
         should_exit.set()
 
 def handle_exit_signal(signum, frame):
     log.info("Received exit signal")
+    if bitc:
+        bitc.shutdown()
     should_exit.set()
 
 if __name__ == '__main__':

@@ -32,7 +32,7 @@ class Results(object):
             self.should_exit.set()
 
     def writeError(self, nm, tfd, base64_path, e):
-        log.error("Error processing file %s\n%s", nm, e)
+        log.error("Error processing file %s %s", nm, e)
         if self.nolog_to_file:
             return
         try:
@@ -43,7 +43,7 @@ class Results(object):
             self.should_exit.set()
 
     def writeErrorDir(self, nm, tfd, base64_path, e):
-        log.error("Error processing folder %s\n%s", nm, e)
+        log.error("Error processing folder %s %s", nm, e)
         if self.nolog_to_file:
             return
         try:

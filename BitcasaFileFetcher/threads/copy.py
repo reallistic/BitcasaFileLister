@@ -8,10 +8,17 @@ except NameError:
     class WindowsError(Exception):
         pass
 
-def copy(queue, should_exit, completed_copies, results, args):
+def copy(status, should_exit, results, args):
     log.debug("Starting up")
     while not should_exit.is_set():
-        item = queue.get(True)
+        try:
+            item = status.copy()
+        except EmptyException:
+            if status.queuers_active or status.down_active:
+                continue
+            else:
+                log.debug("Nothing left to move. Shutting down")
+
         if item is None:
             continue
         filename = item["filename"]
@@ -25,6 +32,7 @@ def copy(queue, should_exit, completed_copies, results, args):
         retriesleft = 3
         sizecopied = 0
         seek = 0
+        copy_failed = True
         while retriesleft > 0 and not should_exit.is_set():
             try:
                 mode = "wb"
@@ -61,8 +69,6 @@ def copy(queue, should_exit, completed_copies, results, args):
                             else:
                                 break
                     timespan = (cr-st)
-                if should_exit.is_set():
-                    log.info("Stopping Move")
             except IOError as e:
                 if e.errno == errno.ENOSPC:
                     log.critical("No space left on target disk. Exiting")
@@ -79,39 +85,37 @@ def copy(queue, should_exit, completed_copies, results, args):
                 retriesleft -= 1
                 if retriesleft > 0:
                     log.exception("Error moving file will retry %s more times", retriesleft)
+                    time.sleep(10)
                 else:
                     log.exception("Error file could not be moved to %s", destpath)
                     results.writeError(item["filename"], item["fullpath"], item["filepath"], "Move failed")
             else:
-                retriesleft = 0
-                if args.progress:
-                    speed = utils.get_speed(sizecopied-seek, timespan)
-                    log.info("%s %s moved at %s", filename, size_str, speed)
-                try:
-                    os.remove(tmppath)
-                except:
-                    log.exception("Failed cleaning up temp file %s", tmppath)
+                if not should_exit.is_set():
+                    copy_failed = False
+                    retriesleft = 0
+                    if args.progress:
+                        speed = utils.get_speed(sizecopied-seek, timespan)
+                        log.info("%s %s moved at %s", filename, size_str, speed)
+                    try:
+                        os.remove(tmppath)
+                    except:
+                        log.exception("Failed cleaning up temp file %s", tmppath)
 
-                results.writeSuccess(destpath, item["filepath"])
-                completed_copies.append({
-                    "timespan": timespan,
-                    "size_copied": sizecopied,
-                    "temppath": tmppath,
-                    "destpath": destpath
-                })
-                log.info("Finished moving %s", filename)
-        try:
-            queue.task_done()
-        except ValueError:
-            pass
+                    results.writeSuccess(destpath, item["filepath"])
+                    status.copy({
+                        "timespan": timespan,
+                        "size_copied": sizecopied,
+                        "temppath": tmppath,
+                        "destpath": destpath
+                    })
+                    log.info("Finished moving %s", filename)
+                else:
+                    results.writeError(item["filename"], item["fullpath"], item["filepath"], "Move stopped")
+
+        if copy_failed:
+            status.copy_fail(item)
+
         log.debug("End of thread")
 
-    if should_exit.is_set():
-        log.debug("Clearing queue")
-        try:
-            while True:
-                queue.task_done()
-        except ValueError:
-            pass
     log.info("Shutting down")
     

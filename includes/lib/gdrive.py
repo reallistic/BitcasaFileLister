@@ -44,73 +44,38 @@ class GoogleDrive(object):
 
 
     def upload_file(self, filepath, filename, parent="root"):
-        try:
-            media_body = MediaFileUpload(filepath, resumable=True, mimetype="", chunksize=-1)
-            body = {
-                'title': filename,
-                'parents': [{'id': parent}],
-                'mimeType': ""
-            }
+        media_body = MediaFileUpload(filepath, resumable=True, mimetype="", chunksize=-1)
+        body = {
+            'title': filename,
+            'parents': [{'id': parent}],
+            'mimeType': ""
+        }
 
-            return self.get_service().files().insert(body=body, media_body=media_body).execute()
-        except:
-            log.exception("Error uploading file %s", filepath)
-            return False
+        return self.get_service().files().insert(body=body, media_body=media_body).execute()
 
 
     def check_file_exists(self, filename, parent="root"):
-        try:
-            children = self.get_service().children().list(folderId=parent, q="title = '%s'" % filename.replace("'", "\\'")).execute()
-            items = children.get('items', [])
-            original = None
-            for child in items:
-                child_file = self.get_service().files().get(fileId=child["id"]).execute()
-                if original is None:
-                    original = child_file
-                else:
-                    o = time.strptime(original["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-                    t = time.strptime(child_file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-                    if t < o:
-                        original = child_file
+        children = self.get_service().children().list(folderId=parent, q="title = '%s'" % filename.replace("'", "\\'")).execute()
+        items = children.get('items', [])
+        original = None
+        for child in items:
+            child_file = self.get_service().files().get(fileId=child["id"]).execute()
             if original is None:
-                return False
+                original = child_file
             else:
-                return original
-        except errors.HttpError:
-            log.exception("Error checking for file")
-            return None
-
-    def delete_filebyname(self, filename, parent="root"):
-        myfile = self.check_file_exists(filename, parent=parent)
-        retriesleft = 3
-        while myfile is None and retriesleft > 0:
-            time.sleep(10)
-            retriesleft -= 1
-            if retriesleft > 0:
-                myfile = self.check_file_exists(filename, parent=parent)
-            else:
-                log.error("Error checking if file exists. Will retry %s more times", retriesleft)
-                return False
-        if myfile:
-            log.debug("deleting file %s", filename)
-            self.delete_file(myfile["id"])
+                o = time.strptime(original["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                t = time.strptime(child_file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                if t < o:
+                    original = child_file
+        if original is None:
+            return False
         else:
-            log.debug("Could find file %s to delete", filename)
-
+            return original
 
     def need_to_upload(self, filename, folder_id, size_bytes):
         if size_bytes <= 0:
             return False
         myfile = self.check_file_exists(filename, parent=folder_id)
-        retriesleft = 3
-        while myfile is None and retriesleft > 0:
-            time.sleep(10)
-            retriesleft -= 1
-            if retriesleft > 0:
-                myfile = self.check_file_exists(filename, parent=folder_id)
-            else:
-                log.error("Error checking if file exists. Will retry %s more times", retriesleft)
-                return False
         if myfile and int(myfile["fileSize"]) == size_bytes:
             return False
         elif myfile:

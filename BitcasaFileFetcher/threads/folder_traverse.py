@@ -3,40 +3,38 @@ import logging, traceback, os, urllib, time
 from lib.bitcasa import BitcasaClient, BitcasaFolder, BitcasaFile
 from lib.bitcasa.exception import BitcasaException
 from lib.gdrive import GoogleDrive
+from googleapiclient.errors import HttpError
 from helpers import utils
 log = logging.getLogger("BitcasaFileFetcher")
 
-def folder_traverse(folder_queue, download_queue, results, args, should_exit, is_done):
+try:
+    WindowsError
+except NameError:
+    class WindowsError(Exception):
+        pass
+
+def folder_traverse(status, results, args, should_exit):
+    set_working = False
     log.debug("Starting Queuer")
     if args.upload:
         g = GoogleDrive()
     while not should_exit.is_set():
         folder = None
         try:
-            folder = folder_queue.get(True, 20)
+            folder = status.queue()
         except EmptyException:
-            log.debug("All folders processed. Shutting down")
-            is_done.set()
-            return
+            if status.queuers_active > 0:
+                continue
+            else:
+                log.debug("All folders processed. Shutting down")
+                return
 
-        if not args.silentqueuer:
-            log.debug("Grabbing folder %s", folder["folder"].name)
         if args.upload:
-            folder_list_gdrive(folder, folder_queue, download_queue, results, args, should_exit, g)
+            folder_list_gdrive(folder, status, results, args, should_exit, g)
         else:
-            folder_list(folder, folder_queue, download_queue, results, args, should_exit)
-        try:
-            folder_queue.task_done()
-        except ValueError:
-            pass
-        
-    if should_exit.is_set():
-        log.debug("Clearing queue")
-        try:
-            while True:
-                folder_queue.task_done()
-        except ValueError:
-            pass
+            folder_list(folder, status, results, args, should_exit)
+        status.queuing_done()
+
     log.info("Shutting down")
 
 def get_folder_items(fold, should_exit):
@@ -50,7 +48,7 @@ def get_folder_items(fold, should_exit):
             folderitems = fold.items
         except BitcasaException as e:
             if should_exit.is_set():
-                return None
+                break
             remainingtries -= 1
             if e.code in [9006, 429]:
                 apiratecount += 1
@@ -70,11 +68,47 @@ def get_folder_items(fold, should_exit):
         else:
             remainingtries = 0
 
-    if folderitems is None:
+    if should_exit.is_set():
+        return None
+    elif folderitems is None:
         log.error("Failed getting folder items")
     return folderitems
 
-def folder_list_gdrive(folder, folder_queue, download_queue, results, args, should_exit, g):
+def get_local_items(fold, should_exit, results):
+    folderitems = None
+    try:
+        folderlist = os.listdir(fold.path)
+    except OSError:
+        log.exception("Failed to get contents of %s", fold.path)
+    else:
+        folderitems = []
+        for item in folderlist:
+            fullpath = os.path.join(fold.path, item)
+            if should_exit.is_set():
+                break
+            filesize = 0
+            try:
+                if not os.path.isdir(fullpath):
+                    filesize = os.path.getsize(fullpath)
+            except OSError:
+                log.exception("Error getting file info")
+                results.writeError(item, fullpath, "", "Error listing file %s" % item)
+                continue
+            if filesize:
+                bitem = BitcasaFile(None, fullpath, item, None, filesize)
+            else:
+                bitem = BitcasaFolder(None, item, fullpath)
+
+            folderitems.append(bitem)
+
+    if should_exit.is_set():
+        return None
+    elif folderitems is None:
+        log.error("Failed getting folder items")
+    return folderitems
+
+
+def folder_list_gdrive(folder, status, results, args, should_exit, g):
     fold = folder["folder"]
     path = folder["path"]
     folder_id = folder["folder_id"]
@@ -86,9 +120,16 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
     if not args.silentqueuer and path:
         log.info(path)
 
-    folderitems = get_folder_items(fold, should_exit)
+    if args.local:
+        folderitems = get_local_items(fold, should_exit, results)
+    else:
+        folderitems = get_folder_items(fold, should_exit)
     if folderitems is None:
         log.error("Error downloading at folder %s", path)
+        if args.local:
+            results.writeError(folder["folder"].name, path, folder_id, "")
+        else:
+            results.writeError(folder["folder"].name, path, folder["folder"].path, "")
         return
     for item in folderitems:
         if should_exit.is_set():
@@ -107,8 +148,37 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
             tfd = os.path.join(path, nm)
             if isinstance(item, BitcasaFile):
                 filesize = item.size
-                needtoupload = g.need_to_upload(nm, folder_id, filesize)
-                if needtoupload:
+                retriesleft = 10
+                apiratecount = 0
+                while not should_exit.is_set() and retriesleft > 0:
+                    try:
+                        needtoupload = g.need_to_upload(nm, folder_id, filesize)
+                    except HttpError as e:
+                        retriesleft -= 1
+                        if e.resp.status == 403:
+                            apiratecount += 1
+                            retriesleft += 1
+                            log.warn("Google API rate limit reached. Will retry")
+                        else:
+                            log.exception("Error checking is file exists will retry %s more times", retriesleft)
+
+                        if retriesleft > 0:
+                            time.sleep(10 * apiratecount)
+                        else:
+                            results.writeError(nm, tfd, base64_path, "Error queuing file %s" % filename)
+                    except:
+                        retriesleft -= 1
+                        log.exception("Error checking is file exists will retry %s more times", retriesleft)
+                        if retriesleft > 0:
+                            time.sleep(10 * apiratecount)
+                        else:
+                            results.writeError(nm, tfd, base64_path, "Error queuing file %s" % filename)
+                    else:
+                        retriesleft = 0
+                if should_exit.is_set():
+                    log.debug("Stopping folder list")
+                    return
+                elif needtoupload:
                     if args.dryrun:
                         if not args.silentqueuer:
                             log.debug("%s %s", nm, filesize)
@@ -123,15 +193,22 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                             "fullpath": tfd,
                             "filedir": folder_id
                         }
-                        download_queue.put(filedownload)
+                        if args.local:
+                            filedownload["temppath"] = base64_path
+                            status.queue_up(filedownload)
+                        else:
+                            status.queue_down(filedownload)
                 else:
                     results.writeSkipped(tfd, base64_path, nm)
 
             elif isinstance(item, BitcasaFolder):
                 cnf = not args.dryrun
-                if args.rec and (not args.depth or args.depth > depth):
+                if should_exit.is_set():
+                    log.debug("Stopping folder list")
+                    return
+                elif args.rec and (not args.depth or args.depth > depth):
                     g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
-                    remainingtries = 3
+                    remainingtries = 5
                     while not should_exit.is_set() and g_fold is None and remainingtries > 0:
                         remainingtries -= 1
                         log.error("Will retry to get/create %s %s more times", nm, remainingtries)
@@ -140,7 +217,7 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                     if should_exit.is_set():
                         log.debug("Stopping folder list")
                         return
-                    if g_fold is None:
+                    elif g_fold is None:
                         log.error("Failed to get/create folder")
                         return
                     if not args.silentqueuer:
@@ -151,11 +228,11 @@ def folder_list_gdrive(folder, folder_queue, download_queue, results, args, shou
                         "path": tfd,
                         "folder_id": g_fold["id"]
                     }
-                    folder_queue.put(folder)
+                    status.queue(folder)
         except: #Hopefully this won't get called
             results.writeError(nm, tfd, base64_path, traceback.format_exc())
 
-def folder_list(folder, folder_queue, download_queue, results, args, should_exit):
+def folder_list(folder, status, results, args, should_exit):
     fold = folder["folder"]
     path = folder["path"]
     depth = folder["depth"]
@@ -163,7 +240,7 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
     if should_exit.is_set():
         log.debug("Stopping folder list")
         return
-    if path and not args.silentqueuer:
+    elif path and not args.silentqueuer:
         log.info(path)
     fulldest = os.path.abspath(os.path.join(args.dst, path))
     remainingtries = 3
@@ -175,7 +252,7 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
         try:
             try:
                 os.makedirs(fulldest)
-            except (OSError, IOError):
+            except (OSError, IOError, WindowsError):
                 if not os.path.isdir(fulldest):
                     raise
         except:
@@ -192,8 +269,12 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
     if not args.silentqueuer:
         log.debug(fulldest)
     folderitems = get_folder_items(fold, should_exit)
-    if folderitems is None:
+    if should_exit.is_set():
+        log.debug("Stopping folder list")
+        return
+    elif folderitems is None:
         log.error("Error downloading at folder %s", path)
+        results.writeError(folder["folder"].name, path, folder["folder"].path, "")
         return
     for item in folderitems:
         if should_exit.is_set():
@@ -220,7 +301,10 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
                 except OSError:
                     pass
 
-                if fexists:
+                if should_exit.is_set():
+                    log.debug("Stopping folder list")
+                    return
+                elif fexists:
                     results.writeSkipped(tfd, base64_path, nm)
                 else:
                     if args.dryrun:
@@ -237,9 +321,12 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
                             "fullpath": tfd,
                             "filedir": fulldest
                         }
-                        download_queue.put(filedownload)
+                        status.queue_down(filedownload)
             elif isinstance(item, BitcasaFolder):
-                if args.rec and (not args.depth or args.depth > depth):
+                if should_exit.is_set():
+                    log.debug("Stopping folder list")
+                    return
+                elif args.rec and (not args.depth or args.depth > depth):
                     if not args.silentqueuer:
                         log.debug("Queuing folder listing for %s", nm)
                     folder = {
@@ -247,7 +334,7 @@ def folder_list(folder, folder_queue, download_queue, results, args, should_exit
                         "path": os.path.join(path, nm),
                         "depth": (depth+1)
                     }
-                    folder_queue.put(folder)
+                    status.queue(folder)
 
         except: #Hopefully this won't get called
             results.writeError(nm, tfd, base64_path, traceback.format_exc())

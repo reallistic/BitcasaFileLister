@@ -62,15 +62,22 @@
 * Use base64 path for sha1 hash to prevent unicode errors
 
 ## Version 0.6.2
-* Using codecs.open to write raw unicode chars ot files
+* Using codecs.open to write raw unicode chars to files
 * Fixed a small bug in copy.py
 * Changed the name of getfiles.py so people will stop trying to use it :)
 * Added capability to do a --dryrun
 * Added capability to set --folderthreads max
 * When testing auth take into account api limit
-* Don't launch borwser when using --nolaunch with oauth
+* Don't launch browser when using --nolaunch with oauth
 
 ## Version 0.6.3
 * Log the full path in successfiles
 * Waits for uploads/moves to complete if temp disk is full
 * Bugfixes
+
+## Version 0.7.0
+* Better analytics printed every 2 minutes when --progress is present
+* Upload local files
+* Better handling of exit
+* Prevent bug that would improperly cause threads to shutdown
+* Better handling of google drive api limit errors
