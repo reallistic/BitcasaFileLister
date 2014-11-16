@@ -121,7 +121,7 @@ class Args(object):
             help="Runs through the program logging all skipped and downloaded files without actually downloading anything", default=False)
         mainparser.add_argument(
             '--version', help="Displays version and exits",
-            action='version', version='%(prog)s 0.6.2')
+            action='version', version='%(prog)s 0.6.3')
 
         downparser = subparsers.add_parser("download", parents=[mainparser],
             help="Program to download files from bitcasa to local/network storage")
@@ -237,8 +237,8 @@ def run_server(nolaunch):
 
 def handle_input():
     log.debug("Watching for exit")
-    answer = raw_input()
     try:
+        answer = raw_input()
         while not should_exit.is_set():
             if answer.lower() in ["y", "q", "quit", "exit"]:
                 log.info("Received exit signal")

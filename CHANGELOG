@@ -69,3 +69,8 @@
 * Added capability to set --folderthreads max
 * When testing auth take into account api limit
 * Don't launch borwser when using --nolaunch with oauth
+
+## Version 0.6.3
+* Log the full path in successfiles
+* Waits for uploads/moves to complete if temp disk is full
+* Bugfixes
