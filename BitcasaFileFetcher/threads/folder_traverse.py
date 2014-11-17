@@ -39,7 +39,7 @@ def folder_traverse(status, results, args, should_exit):
 
 def get_folder_items(fold, should_exit):
     remainingtries = 5
-    apiratecount = 0
+    apiratecount = 1
     folderitems = None
     while remainingtries > 0 and not should_exit.is_set():
         if apiratecount > 5:
@@ -184,8 +184,6 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                             log.debug("%s %s", nm, filesize)
                         results.writeSuccess(tfd, base64_path)
                     else:
-                        if not args.silentqueuer:
-                            log.debug("Queuing file download for %s", nm)
                         filedownload = {
                             "filename": nm,
                             "filepath": base64_path,
@@ -194,9 +192,13 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                             "filedir": folder_id
                         }
                         if args.local:
+                            if not args.silentqueuer:
+                                log.debug("Queuing file download for %s", nm)
                             filedownload["temppath"] = base64_path
                             status.queue_up(filedownload)
                         else:
+                            if not args.silentqueuer:
+                                log.debug("Queuing file upload for %s", nm)
                             status.queue_down(filedownload)
                 else:
                     results.writeSkipped(tfd, base64_path, nm)

@@ -34,7 +34,6 @@ def download(status, should_exit, session, results, command_args):
             continue
 
         random.seed(item["filepath"])
-        sleeptime = random.randint(10, 45)
         filename = item["filename"]
         size_bytes = item["filesize"]
         size_str = utils.convert_size(size_bytes)
@@ -61,9 +60,10 @@ def download(status, should_exit, session, results, command_args):
 
         log.debug("Downloading file to %s", temp_file)
         retriesleft = 10
-        apiratecount = 0
+        apiratecount = 1
         down_failed = True
         while retriesleft > 0 and not should_exit.is_set():
+            sleeptime = random.randint(10, 70)
             if apiratecount > 5:
                 apiratecount = 5
             try:
@@ -131,7 +131,7 @@ def download(status, should_exit, session, results, command_args):
                 retriesleft -= 1
                 log.exception("%s File size mismatch. Will retry %s more times", filename, retriesleft)
                 if retriesleft > 0:
-                    time.sleep(10)
+                    time.sleep(sleeptime)
                 else:
                     cleanUpAfterError("Error downloading %s Maximum retries reached" % filename, item, results)
             except IOError as e:
@@ -146,14 +146,14 @@ def download(status, should_exit, session, results, command_args):
                     retriesleft -= 1
                     if retriesleft > 0:
                         log.exception("Error downloading %s. Will retry %s more times", filename, retriesleft)
-                        time.sleep(10)
+                        time.sleep(sleeptime)
                     else:
                         cleanUpAfterError("An unknown error occurred", item, results)
             except:
                 retriesleft -= 1
                 if retriesleft > 0:
                     log.exception("Error downloading %s. Will retry %s more times", filename, retriesleft)
-                    time.sleep(10)
+                    time.sleep(sleeptime)
                 else:
                     cleanUpAfterError("An unknown error occurred", item, results)
             else:
