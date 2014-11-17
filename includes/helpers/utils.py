@@ -1,5 +1,3 @@
-CLIENTID = "758ab3de"
-CLIENTSECRET = "5669c999ac340185a7c80c28d12a4319"
 SERVER_HOST = "localhost"
 SERVER_PORT = 1115
 SERVER_URL = "http://%s:%s/bitcasafilelister" % (SERVER_HOST, SERVER_PORT)
@@ -7,6 +5,7 @@ REDIRECT_URI = "%s/auth" % SERVER_URL
 
 import math, os, hashlib, logging, tempfile
 BITCASA_TOKEN = os.path.abspath("bitcasa.ini")
+BITCASA_SAMPLE_TOKEN = os.path.abspath("bitcasa_sample.ini")
 GDRIVE_CREDS = os.path.abspath("gdrive.ini")
 GDRIVE_SECRETS = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../lib", "gdrive_secrets.ini"))
 

@@ -148,6 +148,8 @@ class Args(object):
     def run_download(self, upload=False):
         """Run the main program checks"""
         self.run_level = Args.RUN_LEVEL_MAIN
+        self.args.src = self.args.src.decode("utf-8")
+        self.args.dst = self.args.dst.decode("utf-8")
         self.args.upload = upload
         if not upload:
             self.args.local = False

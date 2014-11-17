@@ -1,4 +1,4 @@
-import os, logging, webbrowser, time
+import os, logging, webbrowser, time, json
 from helpers import utils
 from bitcasa import BitcasaClient
 from bitcasa import BitcasaException
@@ -9,14 +9,34 @@ class BitcasaUtils(object):
     def __init__(self):
         self.client = None
         self.token = None
+        self.client_id = None
+        self.client_secret = None
         self.get_bitcasa_token()
 
     def get_bitcasa_token(self):
         if os.path.isfile(utils.BITCASA_TOKEN):
             try:
                 with open(utils.BITCASA_TOKEN, "r") as tokenfile:
-                    self.token = tokenfile.read()
-                log.debug("Got token")
+                    self.token = tokenfile.read().rstrip()
+                try:
+                    tokens_json = json.loads(self.token)
+                except ValueError:
+                    log.info("Converting bitcasa.ini")
+                    log.info("If you are using a custom CLIENTID and CLIENTSECRET please put them in bitcasa.ini")
+                    with open(utils.BITCASA_SAMPLE_TOKEN, "r") as sample, open(utils.BITCASA_TOKEN, "w+") as tokenfile:
+                        json_sample = json.loads(sample.read())
+                        self.client_id = json_sample["bitcasa"]["CLIENTID"]
+                        self.client_secret = json_sample["bitcasa"]["CLIENTSECRET"]
+                        json_sample["bitcasa"]["TOKEN"] = self.token
+                        tokenfile.write(json.dumps(json_sample, indent=4))
+                else:
+                    self.client_id = tokens_json["bitcasa"]["CLIENTID"]
+                    self.client_secret = tokens_json["bitcasa"]["CLIENTSECRET"]
+                    self.token = tokens_json["bitcasa"]["TOKEN"]
+                    if self.token:
+                        log.debug("Got token")
+                    else:
+                        log.error("No token stored")
             except:
                 log.exception("Failed to read Bitcasa token file")
         else:
@@ -25,7 +45,7 @@ class BitcasaUtils(object):
 
     def create_client(self, force=False, redirect_uri=utils.REDIRECT_URI):
         if (self.token or force) and not self.client:
-            self.client = BitcasaClient(utils.CLIENTID, utils.CLIENTSECRET, redirect_uri, self.token)
+            self.client = BitcasaClient(self.client_id, self.client_secret, redirect_uri, self.token)
         return self.client
 
     def test_auth(self):
