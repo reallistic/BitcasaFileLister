@@ -4,8 +4,8 @@ sys.path.append(insert_path)
 insert_path = os.path.abspath("./includes/lib/")
 sys.path.append(insert_path)
 from helpers import logger
-from bitcasa import BitcasaClient
-from bitcasa import BitcasaException
+from lib.bitcasa import BitcasaClient
+from lib.bitcasa import BitcasaException
 
 should_exit = threading.Event()
 bitc = None
