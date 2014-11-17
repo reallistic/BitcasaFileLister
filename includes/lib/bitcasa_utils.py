@@ -23,7 +23,7 @@ class BitcasaUtils(object):
                 except ValueError:
                     log.info("Converting bitcasa.ini")
                     log.info("If you are using a custom CLIENTID and CLIENTSECRET please put them in bitcasa.ini")
-                    with open(utils.BITCASA_SAMPLE_TOKEN, "r") as sample, open(utils.BITCASA_TOKEN, "w+") as tokenfile:
+                    with open(utils.BITCASA_SAMPLE_TOKEN, "r") as sample, open(utils.BITCASA_TOKEN, "w") as tokenfile:
                         json_sample = json.loads(sample.read())
                         self.client_id = json_sample["bitcasa"]["CLIENTID"]
                         self.client_secret = json_sample["bitcasa"]["CLIENTSECRET"]
@@ -39,8 +39,18 @@ class BitcasaUtils(object):
                         log.error("No token stored")
             except:
                 log.exception("Failed to read Bitcasa token file")
+        elif os.path.isfile(utils.BITCASA_SAMPLE_TOKEN):
+            log.info("Creating bitcasa.ini")
+            try:
+                with open(utils.BITCASA_SAMPLE_TOKEN, "r") as sample, open(utils.BITCASA_TOKEN, "w") as tokenfile:
+                    json_sample = json.loads(sample.read())
+                    self.client_id = json_sample["bitcasa"]["CLIENTID"]
+                    self.client_secret = json_sample["bitcasa"]["CLIENTSECRET"]
+                    tokenfile.write(json.dumps(json_sample, indent=4))
+            except:
+                log.exception("Error writing bitcasa.ini")
         else:
-            log.info("No auth token file found at %s ", os.path.abspath(utils.BITCASA_TOKEN))
+            log.info("No auth token file found at %s or %s ", utils.BITCASA_TOKEN, utils.BITCASA_SAMPLE_TOKEN)
         return self.token
 
     def create_client(self, force=False, redirect_uri=utils.REDIRECT_URI):
