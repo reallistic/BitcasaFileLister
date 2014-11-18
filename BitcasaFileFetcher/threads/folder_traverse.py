@@ -126,7 +126,7 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
         folderitems = get_folder_items(fold, should_exit)
     if folderitems is None:
         log.error("Error downloading at folder %s", path)
-        if args.local:
+        if not args.local:
             results.writeError(folder["folder"].name, path, folder_id, "")
         else:
             results.writeError(folder["folder"].name, path, folder["folder"].path, "")
@@ -152,7 +152,10 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                 apiratecount = 1
                 while not should_exit.is_set() and retriesleft > 0:
                     try:
-                        needtoupload = g.need_to_upload(nm, folder_id, filesize)
+                        if args.dryrun and not folder_id:
+                            needtoupload = True
+                        else:
+                            needtoupload = g.need_to_upload(nm, folder_id, filesize)
                     except HttpError as e:
                         retriesleft -= 1
                         if e.resp.status == 403:
@@ -193,12 +196,12 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                         }
                         if args.local:
                             if not args.silentqueuer:
-                                log.debug("Queuing file download for %s", nm)
+                                log.debug("Queuing file upload for %s", nm)
                             filedownload["temppath"] = base64_path
                             status.queue_up(filedownload)
                         else:
                             if not args.silentqueuer:
-                                log.debug("Queuing file upload for %s", nm)
+                                log.debug("Queuing file download for %s", nm)
                             status.queue_down(filedownload)
                 else:
                     results.writeSkipped(tfd, base64_path, nm)
@@ -214,7 +217,10 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                 apiratecount = 1
                 while not should_exit.is_set() and retriesleft > 0:
                     try:
-                        g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=True)
+                        if args.dryrun and not folder_id:
+                            g_fold = False
+                        else:
+                            g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
                     except HttpError as e:
                         retriesleft -= 1
                         if e.resp.status == 403:
@@ -243,14 +249,20 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                 if should_exit.is_set():
                     log.debug("Stopping folder list")
                     return
-                if not args.silentqueuer:
-                    log.debug("Queuing folder listing for %s", nm)
                 folder = {
                     "folder": item,
                     "depth": (depth+1),
-                    "path": tfd,
-                    "folder_id": g_fold["id"]
+                    "path": tfd
                 }
+                if args.dryrun and not g_fold:
+                    folder["folder_id"] = None
+                elif not g_fold:
+                    results.writeError(nm, tfd, base64_path, "Failed to get/create folder %s" % nm)
+                    continue
+                else:
+                    folder["folder_id"] = g_fold["id"]
+                if not args.silentqueuer:
+                    log.debug("Queuing folder listing for %s", nm)
                 status.queue(folder)
         except:
             results.writeError(nm, tfd, base64_path, traceback.format_exc())
