@@ -81,3 +81,11 @@
 * Better handling of exit
 * Prevent bug that would improperly cause threads to shutdown
 * Better handling of google drive api limit errors
+
+## Version 0.7.1
+* Fixed issues with `--dryrun`
+* Proper log when running local
+* Put custom api creds in bitcasa.ini fixes #56 
+* Fix encoding issues. Fixes #62 Fixes #55 
+* Fix some api rate limit issues where it wouldn't sleep properly
+* Fix a bug where the improper variable was used
