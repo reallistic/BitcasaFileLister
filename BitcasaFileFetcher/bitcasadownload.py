@@ -64,7 +64,7 @@ class BitcasaDownload(object):
             base = BitcasaFolder(None, "root", self.basefolder)
         else:
             remainingtries = 3
-            apiratecount = 0
+            apiratecount = 1
             while base is None and remainingtries > 0 and not self.should_exit.is_set():
                 try:
                     base = self.client.get_folder(self.basefolder)
@@ -157,7 +157,7 @@ class BitcasaDownload(object):
             fold = BitcasaFolder(None, "root", "", items=[myfile])
         else:
             remainingtries = 3
-            apiratecount = 0
+            apiratecount = 1
             while myfile is None and remainingtries > 0 and not self.should_exit.is_set():
                 try:
                     myfile = self.client.get_file_meta(self.basefolder)

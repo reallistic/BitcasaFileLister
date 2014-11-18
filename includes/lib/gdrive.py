@@ -1,12 +1,10 @@
-import httplib2, webbrowser, sys, time, logging, os
-sys.path.insert(1, "BitcasaFileFetcher/lib/")
-from datetime import datetime
-from googleapiclient import errors
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from oauth2client.client import OAuth2WebServerFlow, AccessTokenRefreshError, flow_from_clientsecrets
-from oauth2client.file import Storage
-from oauth2client.tools import run_flow as RunFlow
+import webbrowser, sys, time, logging
+from lib import httplib2
+from lib.googleapiclient import errors
+from lib.googleapiclient.discovery import build
+from lib.googleapiclient.http import MediaFileUpload
+from lib.oauth2client.client import AccessTokenRefreshError, flow_from_clientsecrets
+from lib.oauth2client.file import Storage
 from helpers import utils
 
 log = logging.getLogger("BitcasaFileFetcher")
@@ -80,55 +78,42 @@ class GoogleDrive(object):
             return False
         elif myfile:
             log.debug("Filesize incorrect deleting %s", filename)
-            self.delete_file(myfile["id"])
+            self.get_service().files().delete(fileId=myfile["id"])
             return True
         else:
             return True
 
     def get_folder_byname(self, foldername, parent="root", createnotfound=False):
-        try:
-            children = self.get_service().children().list(folderId=parent,
-                q="title = '%s' and mimeType = 'application/vnd.google-apps.folder'" % foldername.replace("'", "\\'")).execute()
-            items = children.get('items', [])
-            
-            original = None
-            for child in items:
-                child_file = self.get_service().files().get(fileId=child["id"]).execute()
-
-                if original is None:
-                    original = child_file
-                else:
-                    o = time.strptime(original["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-                    t = time.strptime(child_file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
-                    if t < o:
-                        original = child_file
+        children = self.get_service().children().list(folderId=parent,
+            q="title = '%s' and mimeType = 'application/vnd.google-apps.folder'" % foldername.replace("'", "\\'")).execute()
+        items = children.get('items', [])
+        original = None
+        for child in items:
+            child_file = self.get_service().files().get(fileId=child["id"]).execute()
 
             if original is None:
-                if createnotfound:
-                    log.info("No items by the name of %s found. Creating", foldername)
-                    body = {
-                        'title': foldername,
-                        'mimeType':'application/vnd.google-apps.folder'
-                    }
-                    if parent != "root":
-                        body['parents'] = [{'id':parent}]
-                    return self.get_service().files().insert(body=body).execute()
-                else:
-                    log.info("No items by the name of %s found", foldername)
-                    return False
+                original = child_file
             else:
-                return original
-        except errors.HttpError:
-            log.exception("Error getting or creating folder")
-            return None
+                o = time.strptime(original["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                t = time.strptime(child_file["createdDate"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                if t < o:
+                    original = child_file
 
-
-    def delete_file(self, fileid):
-        try:
-            self.get_service().files().delete(fileId=fileid)
-        except errors.HttpError:
-            log.exception("Error deleting file")
-            return False
+        if original is None:
+            if createnotfound:
+                log.debug("No items by the name of %s found. Creating", foldername)
+                body = {
+                    'title': foldername,
+                    'mimeType':'application/vnd.google-apps.folder'
+                }
+                if parent != "root":
+                    body['parents'] = [{'id':parent}]
+                return self.get_service().files().insert(body=body).execute()
+            else:
+                log.debug("No items by the name of %s found", foldername)
+                return False
+        else:
+            return original
 
     @property
     def token_expired(self):

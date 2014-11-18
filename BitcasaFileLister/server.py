@@ -1,4 +1,4 @@
-import sys, logging
+import sys, logging, json
 from lib import bottle, cherrypy, BitcasaUtils
 from lib.bottle import route, run, request, get, post, template, response, view, static_file, redirect
 from lib.bitcasa import BitcasaException, BitcasaFile
@@ -93,8 +93,11 @@ def do_bitcasa_auth():
             error_msg = "Storing permanent token %s" % client.access_token
             log.info(error_msg)
             try:
+                with open(utils.BITCASA_TOKEN, "r") as tokenfile:
+                    json_token = json.loads(tokenfile.read())
                 with open(utils.BITCASA_TOKEN, "w") as tokenfile:
-                    tokenfile.write(client.access_token)
+                    json_token["bitcasa"]["TOKEN"] = client.access_token
+                    tokenfile.write(json.dumps(json_token, indent=4))
             except Exception as e:
                 auth_name="Login"
                 auth_url="/bitcasafilelister/auth"

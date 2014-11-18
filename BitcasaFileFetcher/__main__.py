@@ -4,8 +4,8 @@ sys.path.append(insert_path)
 insert_path = os.path.abspath("./includes/lib/")
 sys.path.append(insert_path)
 from helpers import logger
-from bitcasa import BitcasaClient
-from bitcasa import BitcasaException
+from lib.bitcasa import BitcasaClient
+from lib.bitcasa import BitcasaException
 
 should_exit = threading.Event()
 bitc = None
@@ -148,6 +148,8 @@ class Args(object):
     def run_download(self, upload=False):
         """Run the main program checks"""
         self.run_level = Args.RUN_LEVEL_MAIN
+        self.args.src = self.args.src.decode("utf-8")
+        self.args.dst = self.args.dst.decode("utf-8")
         self.args.upload = upload
         if not upload:
             self.args.local = False

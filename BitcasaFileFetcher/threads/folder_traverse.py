@@ -3,7 +3,7 @@ import logging, traceback, os, urllib, time
 from lib.bitcasa import BitcasaClient, BitcasaFolder, BitcasaFile
 from lib.bitcasa.exception import BitcasaException
 from lib.gdrive import GoogleDrive
-from googleapiclient.errors import HttpError
+from lib.googleapiclient.errors import HttpError
 from helpers import utils
 log = logging.getLogger("BitcasaFileFetcher")
 
@@ -39,7 +39,7 @@ def folder_traverse(status, results, args, should_exit):
 
 def get_folder_items(fold, should_exit):
     remainingtries = 5
-    apiratecount = 0
+    apiratecount = 1
     folderitems = None
     while remainingtries > 0 and not should_exit.is_set():
         if apiratecount > 5:
@@ -86,7 +86,7 @@ def get_local_items(fold, should_exit, results):
             fullpath = os.path.join(fold.path, item)
             if should_exit.is_set():
                 break
-            filesize = 0
+            filesize = None
             try:
                 if not os.path.isdir(fullpath):
                     filesize = os.path.getsize(fullpath)
@@ -94,7 +94,7 @@ def get_local_items(fold, should_exit, results):
                 log.exception("Error getting file info")
                 results.writeError(item, fullpath, "", "Error listing file %s" % item)
                 continue
-            if filesize:
+            if filesize is not None:
                 bitem = BitcasaFile(None, fullpath, item, None, filesize)
             else:
                 bitem = BitcasaFolder(None, item, fullpath)
@@ -126,7 +126,7 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
         folderitems = get_folder_items(fold, should_exit)
     if folderitems is None:
         log.error("Error downloading at folder %s", path)
-        if args.local:
+        if not args.local:
             results.writeError(folder["folder"].name, path, folder_id, "")
         else:
             results.writeError(folder["folder"].name, path, folder["folder"].path, "")
@@ -149,10 +149,13 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
             if isinstance(item, BitcasaFile):
                 filesize = item.size
                 retriesleft = 10
-                apiratecount = 0
+                apiratecount = 1
                 while not should_exit.is_set() and retriesleft > 0:
                     try:
-                        needtoupload = g.need_to_upload(nm, folder_id, filesize)
+                        if args.dryrun and not folder_id:
+                            needtoupload = True
+                        else:
+                            needtoupload = g.need_to_upload(nm, folder_id, filesize)
                     except HttpError as e:
                         retriesleft -= 1
                         if e.resp.status == 403:
@@ -160,32 +163,30 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                             retriesleft += 1
                             log.warn("Google API rate limit reached. Will retry")
                         else:
-                            log.exception("Error checking is file exists will retry %s more times", retriesleft)
+                            log.exception("Error checking if %s exists will retry %s more times", nm, retriesleft)
 
                         if retriesleft > 0:
                             time.sleep(10 * apiratecount)
                         else:
-                            results.writeError(nm, tfd, base64_path, "Error queuing file %s" % filename)
+                            results.writeError(nm, tfd, base64_path, "Error queuing file %s" % nm)
                     except:
                         retriesleft -= 1
-                        log.exception("Error checking is file exists will retry %s more times", retriesleft)
+                        log.exception("Error checking if %s exists will retry %s more times", nm, retriesleft)
                         if retriesleft > 0:
                             time.sleep(10 * apiratecount)
                         else:
-                            results.writeError(nm, tfd, base64_path, "Error queuing file %s" % filename)
+                            results.writeError(nm, tfd, base64_path, "Error queuing file %s" % nm)
                     else:
                         retriesleft = 0
                 if should_exit.is_set():
                     log.debug("Stopping folder list")
                     return
-                elif needtoupload:
+                if needtoupload:
                     if args.dryrun:
                         if not args.silentqueuer:
                             log.debug("%s %s", nm, filesize)
-                            results.writeSuccess(tfd, base64_path)
+                        results.writeSuccess(tfd, base64_path)
                     else:
-                        if not args.silentqueuer:
-                            log.debug("Queuing file download for %s", nm)
                         filedownload = {
                             "filename": nm,
                             "filepath": base64_path,
@@ -194,9 +195,13 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                             "filedir": folder_id
                         }
                         if args.local:
+                            if not args.silentqueuer:
+                                log.debug("Queuing file upload for %s", nm)
                             filedownload["temppath"] = base64_path
                             status.queue_up(filedownload)
                         else:
+                            if not args.silentqueuer:
+                                log.debug("Queuing file download for %s", nm)
                             status.queue_down(filedownload)
                 else:
                     results.writeSkipped(tfd, base64_path, nm)
@@ -206,30 +211,60 @@ def folder_list_gdrive(folder, status, results, args, should_exit, g):
                 if should_exit.is_set():
                     log.debug("Stopping folder list")
                     return
-                elif args.rec and (not args.depth or args.depth > depth):
-                    g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
-                    remainingtries = 5
-                    while not should_exit.is_set() and g_fold is None and remainingtries > 0:
-                        remainingtries -= 1
-                        log.error("Will retry to get/create %s %s more times", nm, remainingtries)
-                        time.sleep(5)
-                        g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
-                    if should_exit.is_set():
-                        log.debug("Stopping folder list")
-                        return
-                    elif g_fold is None:
-                        log.error("Failed to get/create folder")
-                        return
-                    if not args.silentqueuer:
-                        log.debug("Queuing folder listing for %s", nm)
-                    folder = {
-                        "folder": item,
-                        "depth": (depth+1),
-                        "path": tfd,
-                        "folder_id": g_fold["id"]
-                    }
-                    status.queue(folder)
-        except: #Hopefully this won't get called
+                if not args.rec or ( args.depth and args.depth <= depth ):
+                    continue
+                retriesleft = 10
+                apiratecount = 1
+                while not should_exit.is_set() and retriesleft > 0:
+                    try:
+                        if args.dryrun and not folder_id:
+                            g_fold = False
+                        else:
+                            g_fold = g.get_folder_byname(nm, parent=folder_id, createnotfound=cnf)
+                    except HttpError as e:
+                        retriesleft -= 1
+                        if e.resp.status == 403:
+                            apiratecount += 1
+                            retriesleft += 1
+                            log.warn("Google API rate limit reached. Will retry")
+                        else:
+                            log.exception("Will retry to get/create %s %s more times", nm, retriesleft)
+
+                        if retriesleft > 0:
+                            time.sleep(10 * apiratecount)
+                        else:
+                            results.writeError(nm, tfd, base64_path, "Failed to get/create folder %s" % nm)
+                            continue
+                    except:
+                        retriesleft -= 1
+                        log.error("Will retry to get/create %s %s more times", nm, retriesleft)
+                        if retriesleft > 0:
+                            time.sleep(10 * apiratecount)
+                        else:
+                            results.writeError(nm, tfd, base64_path, "Failed to get/create folder %s" % nm)
+                            continue
+                    else:
+                        retriesleft = 0
+
+                if should_exit.is_set():
+                    log.debug("Stopping folder list")
+                    return
+                folder = {
+                    "folder": item,
+                    "depth": (depth+1),
+                    "path": tfd
+                }
+                if args.dryrun and not g_fold:
+                    folder["folder_id"] = None
+                elif not g_fold:
+                    results.writeError(nm, tfd, base64_path, "Failed to get/create folder %s" % nm)
+                    continue
+                else:
+                    folder["folder_id"] = g_fold["id"]
+                if not args.silentqueuer:
+                    log.debug("Queuing folder listing for %s", nm)
+                status.queue(folder)
+        except:
             results.writeError(nm, tfd, base64_path, traceback.format_exc())
 
 def folder_list(folder, status, results, args, should_exit):
@@ -310,7 +345,7 @@ def folder_list(folder, status, results, args, should_exit):
                     if args.dryrun:
                         if not args.silentqueuer:
                             log.debug("%s %s", nm, filesize)
-                            results.writeSuccess(tfd, base64_path)
+                        results.writeSuccess(tfd, base64_path)
                     else:
                         if not args.silentqueuer:
                             log.debug("Queuing file download for %s", nm)

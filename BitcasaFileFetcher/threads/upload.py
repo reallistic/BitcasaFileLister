@@ -1,8 +1,7 @@
 import time, os, logging
 from helpers import utils
 from lib.gdrive import GoogleDrive
-from googleapiclient.errors import HttpError
-import requests
+from lib.googleapiclient.errors import HttpError
 from Queue import Empty as EmptyException
 
 log = logging.getLogger("BitcasaFileFetcher")
